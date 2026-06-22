@@ -12,15 +12,17 @@
     { href: "/settings", label: "Settings", exact: true },
   ];
 
+  $: currentPath = $page.url.pathname;
+
   function closeIfMobile() {
     onClose();
   }
 
-  function isActive(href: string, exact: boolean) {
+  function isActive(pathname: string, href: string, exact: boolean) {
     if (href === "/matches") {
-      return $page.url.pathname === "/matches" || $page.url.pathname.startsWith("/matches/") && $page.url.pathname !== "/matches/new";
+      return pathname === "/matches" || (pathname.startsWith("/matches/") && pathname !== "/matches/new");
     }
-    return exact ? $page.url.pathname === href : $page.url.pathname.startsWith(href);
+    return exact ? pathname === href : pathname.startsWith(href);
   }
 </script>
 
@@ -45,7 +47,7 @@
 
   <nav class="space-y-2">
     {#each navItems as item}
-      {@const active = isActive(item.href, item.exact)}
+      {@const active = isActive(currentPath, item.href, item.exact)}
       <a
         href={item.href}
         class={`block rounded-md px-4 py-2 transition ${

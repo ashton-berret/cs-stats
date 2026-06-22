@@ -1,6 +1,6 @@
 # CS2 Casual Stats Tracker - Progress
 
-## Project Status: Phase 1 Complete - Awaiting Manual Commit Before Phase 2
+## Project Status: Phase 2 Complete - Awaiting Manual Commit Before Phase 3
 **Last Updated:** 2026-06-22
 **Plan:** See `docs/plan.md` for full implementation details. Implementation brief: `CODEX_HANDOFF.md`.
 
@@ -36,15 +36,15 @@ Remaining Phase 1 items below (foundation ports, auth, nav) are Codex's first ta
 - [x] Verify: `bun run check` passes, register/login works, nav renders
 
 ### Phase 2: Match Schema, Manual Entry & Match List
-- [ ] Types: `match.ts`, `analytics.ts`, `parsing.ts`, `index.ts`
-- [ ] `match-repository.ts` (create/update/delete/list incl. `isUser` stat row)
-- [ ] `settings-repository.ts` (get-or-create defaults)
-- [ ] `MatchReviewForm.svelte` — shared editable stat form (map, score, result, K/D/A, ADR, collapsible extended stats, notes)
-- [ ] `/matches/new` manual path + `?/save` action with validation
-- [ ] `MatchCard.svelte`, `MatchFilters.svelte`
-- [ ] `/matches` list (client-side filter/sort)
-- [ ] `/matches/[id]` view / edit / delete
-- [ ] Verify: create/edit/delete a match by hand — app fully usable with no parser
+- [x] Types: `match.ts`, `analytics.ts`, `parsing.ts`, `index.ts`
+- [x] `match-repository.ts` (create/update/delete/list incl. `isUser` stat row)
+- [x] `settings-repository.ts` (get-or-create defaults)
+- [x] `MatchReviewForm.svelte` — shared editable stat form (map, score, result, K/D/A, ADR, collapsible extended stats, notes)
+- [x] `/matches/new` manual path + `?/save` action with validation
+- [x] `MatchCard.svelte`, `MatchFilters.svelte`
+- [x] `/matches` list (client-side filter/sort)
+- [x] `/matches/[id]` view / edit / delete
+- [x] Verify: create/edit/delete a match by hand — app fully usable with no parser
 
 ### Phase 3: Vision-Model Parsing (default engine)
 - [ ] `parser-interface.ts`, `parsing/types.ts`
