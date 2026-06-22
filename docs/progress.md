@@ -1,6 +1,6 @@
 # CS2 Casual Stats Tracker - Progress
 
-## Project Status: Phase 2 Complete - Awaiting Manual Commit Before Phase 3
+## Project Status: Phase 3 Vision Parsing Complete - Phase 4 OCR Implementation Complete, OCR Screenshot Verification Pending
 **Last Updated:** 2026-06-22
 **Plan:** See `docs/plan.md` for full implementation details. Implementation brief: `CODEX_HANDOFF.md`.
 
@@ -47,19 +47,19 @@ Remaining Phase 1 items below (foundation ports, auth, nav) are Codex's first ta
 - [x] Verify: create/edit/delete a match by hand — app fully usable with no parser
 
 ### Phase 3: Vision-Model Parsing (default engine)
-- [ ] `parser-interface.ts`, `parsing/types.ts`
-- [ ] `vision-model-parser.ts` (Ollama `/api/chat`, `format: json`, page-1 + page-2 prompts, `locateUserRow`)
-- [ ] `merge.ts` (index merge + name reconciliation)
-- [ ] `parsing/index.ts` engine factory + `checkVisionHealth`
-- [ ] `screenshot-store.ts` (save uploads to `data/uploads/<userId>/`) + `MatchScreenshot` persistence with `parsedRaw`
-- [ ] `ScoreboardUpload.svelte` (two slots, drag-drop + clipboard paste, thumbnails)
-- [ ] `/matches/new` `?/parse` action → prefill `MatchReviewForm` from `userRowIndex`, surface warnings, allow re-pick
-- [ ] Verify: paste two real CS2 scoreboards with Ollama running → fields prefill → correct & save
+- [x] `parser-interface.ts`, `parsing/types.ts`
+- [x] `vision-model-parser.ts` (Ollama `/api/chat`, `format: json`, page-1 + page-2 prompts, `locateUserRow`)
+- [x] `merge.ts` (index merge + name reconciliation)
+- [x] `parsing/index.ts` engine factory + `checkVisionHealth`
+- [x] `screenshot-store.ts` (save uploads to `data/uploads/<userId>/`) + `MatchScreenshot` persistence with `parsedRaw`
+- [x] `ScoreboardUpload.svelte` (two slots, drag-drop + clipboard paste, thumbnails)
+- [x] `/matches/new` `?/parse` action → prefill `MatchReviewForm` from `userRowIndex`, surface warnings, allow re-pick
+- [x] Verify: two cropped CS2 scoreboard examples parsed with Ollama `qwen3-vl:8b`; `neovimbtw` row prefills map Cache, 0-8 loss, 3/5/0, MVPs 0, score 11, HS 0, ADR 53, UD 0, EF 0
 
 ### Phase 4: OCR Fallback Engine
-- [ ] `ocr-regions.ts` with `1920x1080` calibration profile
-- [ ] `ocr-parser.ts` (sharp crop + preprocess → Tesseract per cell, numeric whitelist)
-- [ ] Engine selection honored end-to-end via `UserSettings.parseEngine`
+- [x] `ocr-regions.ts` with `1920x1080` calibration profile
+- [x] `ocr-parser.ts` (sharp crop + preprocess → Tesseract per cell, numeric whitelist)
+- [x] Engine selection honored end-to-end via `UserSettings.parseEngine`
 - [ ] Verify: OCR parses a 1080p scoreboard; clear warning when no profile matches
 
 ### Phase 5: Dashboard & Charts
@@ -117,13 +117,17 @@ Remaining Phase 1 items below (foundation ports, auth, nav) are Codex's first ta
 - CS2 does not persist casual stats — this app fills that gap via post-match scoreboard screenshots.
 - The review-before-save design means the app is fully functional from Phase 2 (manual entry) before any parser exists.
 - Parsing on CPU (no GPU) will take a few seconds per image — Phase 6 adds a loading state for it.
-- OCR is resolution-dependent; ship `1920x1080` first, add profiles as needed without code changes.
+- OCR is resolution-dependent and sensitive to lobby size / scoreboard height; keep it secondary to the vision parser and add profiles only when they are worth maintaining.
 - Scope is single-user in practice today, but auth + schema are public/multi-user ready.
 
 ---
 
 ## Open Questions / To Confirm During Build
 
-- **Exact CS2 scoreboard columns per page** — confirm against real screenshots which stats live on page 1 vs page 2 (the prompts in `vision-model-parser.ts` assume basic K/A/D/ADR/score on page 1, HS%/MVP/rating/flashes/utility on page 2; adjust once we see live captures).
-- **HLTV rating availability** — CS2's native scoreboard may not show an HLTV-style rating; if absent, drop it from page-2 parsing (field stays nullable).
-- **Default Ollama model** — validate `qwen3-vl:8b` accuracy on real scoreboards; if it struggles, A/B against `qwen3-vl:30b` (accepting the slight VRAM spill). Lock the default after Phase 3 testing.
+- **Exact CS2 scoreboard columns per page** — confirmed from `docs/scoreboard-examples/`: page 1 shows Kills / Deaths / Assists / MVPs / Score; page 2 shows HS% / KDR / ADR / UD / EF / Score. ADR is page 2, not page 1. No separate HLTV-style rating is visible.
+- **OCR 1920x1080 crop profile calibration** — `ocr-regions.ts` now ships the profile shape, but the coordinates are marked as a draft and the parser emits a warning until they are verified against a real 1920x1080 CS2 scoreboard screenshot.
+- **OCR capture target** — LLM parsing should support cropped scoreboard-only screenshots. OCR remains a secondary fallback because player count changes scoreboard height; a fixed-region OCR profile still needs either consistent crops or a full-window 1920x1080 calibration target.
+- **Top-right timer meaning** — the examples show `9:13` and `9:20`; likely an in-game clock/timer rather than reliable match duration. Keep `durationMinutes` manual/nullable until confirmed.
+- **Default Ollama model** — `qwen3-vl:8b` parsed the initial cropped examples correctly. Revisit only if future screenshots expose accuracy issues; A/B against `qwen3-vl:30b` if needed.
+- **Reasoning models need `think:false` + headroom (DO NOT regress)** — `qwen3-vl` is a hybrid reasoning model. Its `<think>` tokens count against `num_predict`; with a tight budget (was `700`) thinking alone (~2200+ chars) exhausts the cap (`done_reason:length`) and the JSON content comes back empty → *"Model did not return JSON"* (intermittent, since thinking length varies). Fix in `vision-model-parser.ts`: send `think: false` **and** keep `num_predict` generous (`1024`). Applies to **any** reasoning-capable model a user might pick in Settings (incl. `qwen3-vl:30b`) — never tighten `num_predict` back down or drop `think:false`. Verified end-to-end: both pages parse, `userRowIndex:0`, `warningCount:0`.
+- **Vision image preprocessing is net-negative on already-cropped shots** — `prepareImageForVision` resizes to 1600×900 and re-encodes PNG at `compressionLevel:9`; on ~1700px cropped scoreboards this *inflates* bytes (observed 1.09MB → 1.29MB) for no legibility gain. Skip the resize/re-encode when the image is already at/under the target dimensions.

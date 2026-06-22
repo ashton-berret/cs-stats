@@ -8,6 +8,7 @@
   export let values: Partial<MatchFormValues> = {};
   export let errors: Record<string, string> = {};
   export let message = "";
+  export let hiddenFields: { name: string; value: string }[] = [];
 
   const defaults: MatchFormValues = {
     map: MAP_NAMES[0] ?? "",
@@ -63,6 +64,9 @@
 
 <form method="POST" {action} class="space-y-6">
   <input type="hidden" name="parseSource" value={current.parseSource} />
+  {#each hiddenFields as field}
+    <input type="hidden" name={field.name} value={field.value} />
+  {/each}
 
   <section class="grid gap-4 md:grid-cols-2">
     <label class="block">

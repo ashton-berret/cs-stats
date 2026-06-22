@@ -5,6 +5,7 @@ export interface MapInfo {
 
 export const CS2_MAPS: MapInfo[] = [
     { name: "Mirage", color: "#E8A33D" },
+    { name: "Cache", color: "#7CB342" },
     { name: "Inferno", color: "#FF6B35" },
     { name: "Dust II", color: "#E0C068" },
     { name: "Nuke", color: "#5BC0BE" },
