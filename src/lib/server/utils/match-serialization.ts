@@ -53,5 +53,5 @@ function normalizeTeam(value: string): Team {
 }
 
 function normalizeParseSource(value: string): ParseEngine {
-  return value === "vision" || value === "ocr" ? value : "manual";
+  return value === "vision" || value === "ocr" || value === "gsi" ? value : "manual";
 }

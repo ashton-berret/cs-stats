@@ -76,6 +76,9 @@ Remaining Phase 1 items below (foundation ports, auth, nav) are Codex's first ta
 - [x] Streaks and momentum: current/longest win-loss streaks, last-5-vs-overall win-rate/KD deltas,
       dashboard indicators, and pure calculator tests covering alternating results, all-win runs, tie resets,
       momentum sign, and the `< 2N` null guard
+- [x] Dedup/merge for screenshot-after-GSI: pure duplicate ranking and merge precedence, recent-match repo lookup,
+      transactional merge into an existing match, screenshot-row appends through the repo layer, and `/matches/new`
+      duplicate prompt with merge vs save-separate actions
 - [ ] Verify: dashboard reflects saved matches; charts render in dark + light (manual — needs a live server + a few saved matches)
 
 > Implementation complete (`bun run check` 0/0). Shared helper `charts/chart-helpers.ts` (`shortDate`, `rollingAverage`).

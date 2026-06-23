@@ -1,14 +1,16 @@
 import type { Actions, PageServerLoad } from "./$types";
 import { fail, redirect } from "@sveltejs/kit";
 import { requireUser } from "$lib/server/auth/guard";
-import { createMatch } from "$lib/server/db/repositories/match-repository";
+import { createMatch, findRecentMatchesForDedup, mergeIntoMatch } from "$lib/server/db/repositories/match-repository";
 import { getSettings } from "$lib/server/db/repositories/settings-repository";
 import { defaultMatchFormValues, parseMatchForm } from "$lib/server/utils/match-form";
 import { getParserForSettings } from "$lib/server/services/parsing";
 import type { ScoreboardImage } from "$lib/server/services/parsing";
 import type { MatchFormValues } from "$lib/types/match";
 import type { ScoreboardParseResult } from "$lib/types/parsing";
-import { collectScreenshotPayloads, saveScreenshotFromDataUrl } from "$lib/server/services/storage/screenshot-store";
+import { rankDuplicateCandidates } from "$lib/server/services/matching/match-dedup";
+import { serializeMatchSummary } from "$lib/server/utils/match-serialization";
+import { collectScreenshotPayloads, prepareScreenshotFromDataUrl, saveScreenshotFromDataUrl } from "$lib/server/services/storage/screenshot-store";
 import { logger, logError } from "$lib/server/utils/logger";
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -103,11 +105,83 @@ export const actions: Actions = {
       });
     }
 
+    if (formData.get("skipDedup") !== "1") {
+      const candidates = rankDuplicateCandidates(
+        {
+          map: parsed.input.map,
+          playedAt: parsed.input.playedAt,
+          teamScore: parsed.input.teamScore,
+          enemyScore: parsed.input.enemyScore,
+          parseSource: parsed.input.parseSource,
+        },
+        await findRecentMatchesForDedup(user.id, parsed.input.playedAt),
+      );
+      const candidate = candidates[0];
+      if (candidate) {
+        return {
+          message: "",
+          playerName: parsed.input.stat.playerName,
+          values: parsed.values,
+          errors: {},
+          hiddenFields: hiddenFieldsFromFormData(formData),
+          warnings: [],
+          duplicate: {
+            candidateId: candidate.match.id,
+            confidence: candidate.confidence,
+            candidateSummary: serializeMatchSummary(candidate.match),
+          },
+        };
+      }
+    }
+
     const match = await createMatch(user.id, parsed.input);
     for (const payload of screenshotPayloads) {
       await saveScreenshotFromDataUrl(user.id, match.id, payload);
     }
     redirect(302, `/matches/${match.id}`);
+  },
+  merge: async ({ request, locals }) => {
+    const user = requireUser(locals);
+    const formData = await request.formData();
+    const candidateId = stringFormValue(formData, "candidateId");
+    const screenshotPayloads = collectScreenshotPayloads(formData);
+    const parsed = parseMatchForm(formData);
+
+    if (!candidateId) {
+      return fail(400, {
+        message: "Choose the existing match to merge into.",
+        values: parsed.ok ? parsed.values : parsed.values,
+        errors: parsed.ok ? {} : parsed.errors,
+        hiddenFields: hiddenFieldsFromFormData(formData),
+        warnings: [],
+      });
+    }
+
+    if (!parsed.ok) {
+      return fail(400, {
+        message: parsed.message,
+        values: parsed.values,
+        errors: parsed.errors,
+        hiddenFields: hiddenFieldsFromFormData(formData),
+        warnings: [],
+      });
+    }
+
+    const screenshots = (
+      await Promise.all(screenshotPayloads.map((payload) => prepareScreenshotFromDataUrl(user.id, payload)))
+    ).filter((payload): payload is NonNullable<typeof payload> => payload !== null);
+    const merged = await mergeIntoMatch(user.id, candidateId, parsed.input, screenshots);
+    if (!merged) {
+      return fail(404, {
+        message: "The duplicate candidate no longer exists.",
+        values: parsed.values,
+        errors: {},
+        hiddenFields: hiddenFieldsFromFormData(formData),
+        warnings: [],
+      });
+    }
+
+    redirect(302, `/matches/${candidateId}`);
   },
 };
 
@@ -130,6 +204,11 @@ async function collectImages(formData: FormData): Promise<ScoreboardImage[]> {
 
 function parsePlayerName(formData: FormData): string {
   const value = formData.get("parsePlayerName");
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function stringFormValue(formData: FormData, key: string): string {
+  const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
 }
 

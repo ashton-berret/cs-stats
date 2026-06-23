@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
-import { prisma } from "$lib/server/db/client";
+import { addMatchScreenshot, type MatchScreenshotInput } from "$lib/server/db/repositories/match-repository";
 
 const UPLOAD_ROOT = path.resolve("data", "uploads");
 
@@ -12,6 +12,12 @@ export interface ScreenshotPayload {
 }
 
 export async function saveScreenshotFromDataUrl(userId: string, matchId: string, payload: ScreenshotPayload) {
+  const prepared = await prepareScreenshotFromDataUrl(userId, payload);
+  if (!prepared) return null;
+  return addMatchScreenshot(matchId, prepared);
+}
+
+export async function prepareScreenshotFromDataUrl(userId: string, payload: ScreenshotPayload): Promise<MatchScreenshotInput | null> {
   const decoded = decodeDataUrl(payload.dataUrl);
   if (!decoded) return null;
 
@@ -25,16 +31,13 @@ export async function saveScreenshotFromDataUrl(userId: string, matchId: string,
 
   const metadata = await sharp(decoded.buffer).metadata();
 
-  return prisma.matchScreenshot.create({
-    data: {
-      matchId,
-      page: payload.page,
-      storagePath: relativePath.replaceAll("\\", "/"),
-      width: metadata.width ?? null,
-      height: metadata.height ?? null,
-      parsedRaw: payload.parsedRaw,
-    },
-  });
+  return {
+    page: payload.page,
+    storagePath: relativePath.replaceAll("\\", "/"),
+    width: metadata.width ?? null,
+    height: metadata.height ?? null,
+    parsedRaw: payload.parsedRaw,
+  };
 }
 
 export function collectScreenshotPayloads(formData: FormData): ScreenshotPayload[] {
