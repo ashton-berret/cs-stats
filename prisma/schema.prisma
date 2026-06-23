@@ -69,6 +69,7 @@ model Match {
   result          String // "WIN" | "LOSS" | "TIE"
   side            String? // "CT" | "T" — the side the user played (casual keeps one side per match)
   roundsPlayed    Int? // rounds the user actually played (may be < teamScore+enemyScore if joined in progress)
+  roundsJson      String? // normalized GSI RoundRecord[] JSON; nullable for manual/legacy matches
   durationMinutes Int?
   notes           String?
   parseSource     String   @default("manual") // "vision" | "ocr" | "manual" | "gsi"

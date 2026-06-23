@@ -1,4 +1,5 @@
 import type { MatchResult } from "./match";
+import type { RoundAnalyticsSummary } from "./rounds";
 
 export interface DashboardStats {
   totalMatches: number;
@@ -46,5 +47,8 @@ export interface DashboardStats {
     baselineKd: number;
     kdDelta: number;
   } | null;
+  entryImpact: (RoundAnalyticsSummary & {
+    trend: { date: string; survivalRate: number; entryDeathRate: number }[];
+  }) | null;
   recentForm: MatchResult[];
 }

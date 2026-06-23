@@ -2,7 +2,7 @@ export const GSI_CONFIG_FILENAME = "gamestate_integration_csstats.cfg";
 
 /** Builds the CS2 GSI config file contents that point the game at our local endpoint. */
 export function buildGsiConfig(token: string, endpoint: string): string {
-  return `"CS2 Stats Tracker"
+  return `"CS2 Stats Tracker v2"
 {
     "uri"       "${endpoint}"
     "timeout"   "5.0"
@@ -17,6 +17,7 @@ export function buildGsiConfig(token: string, endpoint: string): string {
     {
         "provider"           "1"
         "map"                "1"
+        "map_round_wins"     "1"
         "round"              "1"
         "player_id"          "1"
         "player_state"       "1"

@@ -4,6 +4,7 @@ import { requireUser } from "$lib/server/auth/guard";
 import { deleteMatch, getMatch, updateMatch } from "$lib/server/db/repositories/match-repository";
 import { parseMatchForm, toDateTimeLocal } from "$lib/server/utils/match-form";
 import { serializeMatchDetail } from "$lib/server/utils/match-serialization";
+import { parseRoundRecords, summarizeRoundRecords } from "$lib/utils/round-analytics";
 import type { MatchFormValues } from "$lib/types/match";
 
 export const load: PageServerLoad = async ({ locals, params }) => {
@@ -12,8 +13,11 @@ export const load: PageServerLoad = async ({ locals, params }) => {
   if (!match) error(404, "Match not found");
 
   const detail = serializeMatchDetail(match);
+  const rounds = parseRoundRecords(detail.roundsJson);
   return {
     match: detail,
+    rounds,
+    roundSummary: summarizeRoundRecords(rounds),
     values: valuesFromMatch(detail),
   };
 };

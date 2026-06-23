@@ -5,6 +5,7 @@
   import ResultsDonut from "$lib/components/charts/ResultsDonut.svelte";
   import PerformanceByMap from "$lib/components/charts/PerformanceByMap.svelte";
   import SidePerformance from "$lib/components/charts/SidePerformance.svelte";
+  import EntryImpactTrend from "$lib/components/charts/EntryImpactTrend.svelte";
   import TopWeaponsMini from "$lib/components/charts/TopWeaponsMini.svelte";
   import PerformanceRadar from "$lib/components/dashboard/PerformanceRadar.svelte";
   import StatChip from "$lib/components/dashboard/StatChip.svelte";
@@ -231,6 +232,31 @@
         <h2 class="mb-3 font-[var(--font-display)] text-lg">Results</h2>
         <ResultsDonut data={stats.resultBreakdown} />
       </div>
+      {#if stats.entryImpact}
+        <div class="glass-card anim-rise p-5 lg:col-span-2" style="animation-delay:170ms">
+          <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 class="font-[var(--font-display)] text-lg">Entry impact</h2>
+              <p class="text-sm text-[var(--color-text-secondary)]">Entry (est.) and survival from GSI round records.</p>
+            </div>
+            <div class="grid grid-cols-3 gap-3 text-right text-sm">
+              <div>
+                <p class="text-[var(--color-text-secondary)]">Entry success</p>
+                <p class="font-[var(--font-mono)] text-lg">{stats.entryImpact.entrySuccessRate === null ? "—" : `${stats.entryImpact.entrySuccessRate}%`}</p>
+              </div>
+              <div>
+                <p class="text-[var(--color-text-secondary)]">Survival</p>
+                <p class="font-[var(--font-mono)] text-lg">{stats.entryImpact.survivalRate}%</p>
+              </div>
+              <div>
+                <p class="text-[var(--color-text-secondary)]">Entry deaths</p>
+                <p class="font-[var(--font-mono)] text-lg">{stats.entryImpact.entryDeaths}</p>
+              </div>
+            </div>
+          </div>
+          <EntryImpactTrend data={stats.entryImpact.trend} />
+        </div>
+      {/if}
       <div class="glass-card anim-rise p-5" style="animation-delay:180ms">
         <h2 class="mb-3 font-[var(--font-display)] text-lg">ADR trend</h2>
         {#if stats.adrTrend.length}

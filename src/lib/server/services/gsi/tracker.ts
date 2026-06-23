@@ -2,6 +2,7 @@ import type { GsiPayload } from "./types";
 import type { MatchInput, MatchSide } from "$lib/types/match";
 import { createMatch } from "$lib/server/db/repositories/match-repository";
 import { logger } from "$lib/server/utils/logger";
+import { createRoundTracker, finalizeRoundTracker, trackRoundPayload, type RoundTrackerState } from "./round-tracker";
 
 /**
  * In-memory live-match tracker. GSI has no match id and streams many partial payloads, so we
@@ -50,6 +51,7 @@ interface LiveMatch {
   assists: number;
   mvps: number;
   score: number;
+  roundTracker: RoundTrackerState;
   finalized: boolean;
   startedAt: Date;
 }
@@ -89,6 +91,7 @@ export async function handleGsiPayload(userId: string, payload: GsiPayload): Pro
         assists: 0,
         mvps: 0,
         score: 0,
+        roundTracker: createRoundTracker(totalRounds),
         finalized: false,
         startedAt: new Date(),
       };
@@ -115,6 +118,8 @@ export async function handleGsiPayload(userId: string, payload: GsiPayload): Pro
     }
   }
 
+  trackRoundPayload(live.roundTracker, isOwnPlayer ? payload : { ...payload, player: undefined });
+
   if (phase === GAMEOVER_PHASE && !live.finalized) {
     live.finalized = true;
     await finalize(userId, live);
@@ -127,6 +132,7 @@ async function finalize(userId: string, live: LiveMatch): Promise<void> {
   const enemyScore = live.side === "T" ? live.ctScore : live.tScore;
   const result = userScore > enemyScore ? "WIN" : userScore < enemyScore ? "LOSS" : "TIE";
   const roundsPlayed = Math.max(0, live.ctScore + live.tScore - live.joinTotalRounds) || null;
+  const roundRecords = finalizeRoundTracker(live.roundTracker);
 
   const input: MatchInput = {
     map: live.map,
@@ -137,6 +143,7 @@ async function finalize(userId: string, live: LiveMatch): Promise<void> {
     result,
     side: live.side,
     roundsPlayed,
+    roundsJson: roundRecords.length ? JSON.stringify(roundRecords) : null,
     durationMinutes: Math.max(1, Math.round((Date.now() - live.startedAt.getTime()) / 60000)),
     notes: null,
     parseSource: "gsi",

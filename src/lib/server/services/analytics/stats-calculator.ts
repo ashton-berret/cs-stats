@@ -1,8 +1,10 @@
 import type { MatchWithUserStat } from "$lib/server/db/repositories/match-repository";
 import type { DashboardStats } from "$lib/types/analytics";
 import type { MatchResult, MatchSide } from "$lib/types/match";
+import type { RoundRecord } from "$lib/types/rounds";
 import { mapColor } from "$lib/config/maps";
 import { buildActivity, buildPerformanceMetrics, computeFormScore } from "$lib/utils/performance";
+import { parseRoundRecords, summarizeRoundRecords } from "$lib/utils/round-analytics";
 
 export interface CalendarDay {
   date: string;
@@ -65,6 +67,7 @@ interface MatchPoint {
   hsPercent: number | null;
   hltvRating: number | null;
   utilityDamage: number | null;
+  rounds: RoundRecord[];
 }
 
 /**
@@ -132,6 +135,7 @@ export function computeDashboardStats(matches: MatchWithUserStat[]): DashboardSt
     sidePerformanceByMap: computeSidePerformanceByMap(points),
     streaks: computeStreaks(points),
     momentum: computeMomentum(points),
+    entryImpact: computeEntryImpact(points),
     recentForm: points.slice(-RECENT_FORM_COUNT).map((p) => p.result),
   };
 }
@@ -151,6 +155,7 @@ function toPoint(match: MatchWithUserStat): MatchPoint {
     hsPercent: stat?.hsPercent ?? null,
     hltvRating: stat?.hltvRating ?? null,
     utilityDamage: stat?.utilityDamage ?? null,
+    rounds: parseRoundRecords(match.roundsJson),
   };
 }
 
@@ -284,6 +289,24 @@ function computeMomentum(points: MatchPoint[]): DashboardStats["momentum"] {
     recentKd,
     baselineKd,
     kdDelta: round(recentKd - baselineKd, 2),
+  };
+}
+
+function computeEntryImpact(points: MatchPoint[]): DashboardStats["entryImpact"] {
+  const pointsWithRounds = points.filter((point) => point.rounds.length > 0);
+  if (pointsWithRounds.length === 0) return null;
+  const summary = summarizeRoundRecords(pointsWithRounds.flatMap((point) => point.rounds));
+  if (!summary) return null;
+  return {
+    ...summary,
+    trend: pointsWithRounds.map((point) => {
+      const entryDeaths = point.rounds.filter((round) => round.entryDeathEst).length;
+      return {
+        date: point.playedAt,
+        survivalRate: round((point.rounds.filter((round) => round.survived).length / point.rounds.length) * 100, 1),
+        entryDeathRate: round((entryDeaths / point.rounds.length) * 100, 1),
+      };
+    }),
   };
 }
 

@@ -27,6 +27,7 @@ export interface MatchInput {
   result: MatchResult;
   side: MatchSide | null;
   roundsPlayed: number | null;
+  roundsJson: string | null;
   durationMinutes: number | null;
   notes: string | null;
   parseSource: ParseEngine;
@@ -43,6 +44,7 @@ export interface MatchSummary {
   result: MatchResult;
   side: MatchSide | null;
   roundsPlayed: number | null;
+  roundsJson: string | null;
   parseSource: ParseEngine;
   stat: PlayerStatInput;
 }

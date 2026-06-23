@@ -5,7 +5,8 @@ Post-MVP features. Each is self-contained and layers onto the existing match/sta
 data sources behind the same pluggable philosophy.
 
 > **Status:** Stretch Goal 1 (Steam Web API weapon stats) is **verified against a live CS2 account** and
-> ready to implement. Stretch Goal 2 (GSI auto-capture) is researched and parked behind it.
+> ready to implement. Stretch Goal 2 (GSI auto-capture) is implemented for core match capture and round timeline,
+> with live-match heuristic validation still pending.
 
 ---
 
@@ -119,7 +120,7 @@ model WeaponStatSnapshot {
 
 ---
 
-## Stretch Goal 2 — Automated capture via Game State Integration (GSI)  🔬 researched, parked
+## Stretch Goal 2 — Automated capture via Game State Integration (GSI)  ✅ implemented, live validation pending
 
 The **VAC-safe, Valve-sanctioned** way to automate per-match capture (same mechanism HLTV overlays and
 stream tools use — explicitly allowed, no overlay injection, no memory reading).
@@ -144,3 +145,12 @@ ADR or lifetime weapon stats. Best layered in once weapon stats prove the value.
 
 All three feed the same Match/PlayerMatchStat/weapon schema — the existing pluggable parser design
 already anticipates multiple sources.
+
+### Implementation status
+
+- [x] GSI config endpoint includes own-player match state and `map_round_wins`.
+- [x] GSI auto-creates a core combat match at gameover.
+- [x] `roundsJson` stores normalized per-round records with side, kills, headshots, damage, survival,
+      Entry (est.) proxies, win/loss, and end reason.
+- [x] Match detail and dashboard render round timeline / Entry impact analytics null-safely.
+- [ ] Validate Entry (est.) and round-boundary heuristics against a real live casual match capture.

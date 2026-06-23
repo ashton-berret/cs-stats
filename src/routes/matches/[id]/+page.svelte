@@ -12,6 +12,8 @@
 
   $: match = data.match;
   $: stat = match.stat;
+  $: rounds = data.rounds;
+  $: roundSummary = data.roundSummary;
   $: kd = stat.deaths === 0 ? stat.kills : stat.kills / stat.deaths;
   $: score = match.teamScore !== null && match.enemyScore !== null ? `${match.teamScore}-${match.enemyScore}` : "No score";
 
@@ -20,6 +22,10 @@
       dateStyle: "medium",
       timeStyle: "short",
     }).format(new Date(value));
+  }
+
+  function pct(value: number | null | undefined) {
+    return value === null || value === undefined ? "-" : `${value}%`;
   }
 </script>
 
@@ -81,6 +87,54 @@
         <p class="mt-2 text-2xl font-bold">{stat.hsPercent === null ? "-" : `${stat.hsPercent.toFixed(1)}%`}</p>
       </Card>
     </div>
+
+    {#if roundSummary && rounds.length}
+      <Card>
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold">Round timeline</h2>
+            <p class="mt-1 text-sm text-[var(--color-text-secondary)]">Entry (est.) uses own-player GSI only, so it is a proxy.</p>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+            <div>
+              <p class="text-[var(--color-text-secondary)]">Entry success</p>
+              <p class="font-[var(--font-mono)] text-lg">{pct(roundSummary.entrySuccessRate)}</p>
+            </div>
+            <div>
+              <p class="text-[var(--color-text-secondary)]">Survival</p>
+              <p class="font-[var(--font-mono)] text-lg">{roundSummary.survivalRate}%</p>
+            </div>
+            <div>
+              <p class="text-[var(--color-text-secondary)]">2K+ rounds</p>
+              <p class="font-[var(--font-mono)] text-lg">{roundSummary.multiKillRounds}</p>
+            </div>
+            <div>
+              <p class="text-[var(--color-text-secondary)]">Avg damage</p>
+              <p class="font-[var(--font-mono)] text-lg">{roundSummary.avgRoundDamage}</p>
+            </div>
+          </div>
+        </div>
+        <div class="mt-5 flex flex-wrap gap-2">
+          {#each rounds as round}
+            <div
+              class={`flex h-12 w-12 flex-col items-center justify-center rounded-md border text-xs ${
+                round.won === true
+                  ? "border-[var(--color-success)]/50 bg-[var(--color-success)]/15"
+                  : round.won === false
+                    ? "border-[var(--color-danger)]/50 bg-[var(--color-danger)]/15"
+                    : "border-[var(--color-border)] bg-[var(--color-bg-surface-overlay)]"
+              }`}
+              title={`Round ${round.round}: ${round.kills}K, ${round.damage} dmg`}
+            >
+              <span class="font-[var(--font-mono)] font-bold">{round.won === true ? "W" : round.won === false ? "L" : "?"}{round.round}</span>
+              <span class={round.side === "CT" ? "text-[#6CA0DC]" : round.side === "T" ? "text-[#E0A93B]" : "text-[var(--color-text-muted)]"}>
+                {round.entryFragEst ? "EF" : round.entryDeathEst ? "ED" : round.side ?? "-"}
+              </span>
+            </div>
+          {/each}
+        </div>
+      </Card>
+    {/if}
 
     <Card>
       <h2 class="text-lg font-semibold">Details</h2>

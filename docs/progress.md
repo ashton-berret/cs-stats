@@ -79,6 +79,9 @@ Remaining Phase 1 items below (foundation ports, auth, nav) are Codex's first ta
 - [x] Dedup/merge for screenshot-after-GSI: pure duplicate ranking and merge precedence, recent-match repo lookup,
       transactional merge into an existing match, screenshot-row appends through the repo layer, and `/matches/new`
       duplicate prompt with merge vs save-separate actions
+- [x] Richer GSI round timeline: `roundsJson` migration (`gsi_round_timeline`), GSI cfg `map_round_wins`,
+      pure round-tracker state machine with synthetic own-player fixture, null-safe round analytics, match detail
+      timeline, and dashboard Entry impact trend/summary
 - [ ] Verify: dashboard reflects saved matches; charts render in dark + light (manual — needs a live server + a few saved matches)
 
 > Implementation complete (`bun run check` 0/0). Shared helper `charts/chart-helpers.ts` (`shortDate`, `rollingAverage`).
@@ -127,6 +130,8 @@ Remaining Phase 1 items below (foundation ports, auth, nav) are Codex's first ta
 ## Notes
 
 - CS2 does not persist casual stats — this app fills that gap via post-match scoreboard screenshots.
+- GSI round analytics are implemented and unit-tested against a handwritten fixture, but the entry/opening-duel
+  heuristics still need validation against a real live-match GSI capture.
 - The review-before-save design means the app is fully functional from Phase 2 (manual entry) before any parser exists.
 - Parsing on CPU (no GPU) will take a few seconds per image — Phase 6 adds a loading state for it.
 - OCR is resolution-dependent and sensitive to lobby size / scoreboard height; keep it secondary to the vision parser and add profiles only when they are worth maintaining.

@@ -9,12 +9,14 @@ export interface GsiPayload {
     round?: number;
     team_ct?: { score?: number };
     team_t?: { score?: number };
+    round_wins?: Record<string, string>;
   };
-  round?: { phase?: string };
+  round?: { phase?: string; win_team?: string; bomb?: string };
   player?: {
     steamid?: string;
     name?: string;
     team?: string; // "CT" | "T"
+    state?: { health?: number; round_kills?: number; round_killhs?: number; round_totaldmg?: number };
     match_stats?: { kills?: number; assists?: number; deaths?: number; mvps?: number; score?: number };
   };
   auth?: { token?: string };

@@ -111,6 +111,7 @@ export function parseMatchForm(formData: FormData): ParsedMatchForm {
       result: values.result,
       side: values.side ? (values.side as MatchSide) : null,
       roundsPlayed,
+      roundsJson: null,
       durationMinutes,
       notes: values.notes.trim() || null,
       parseSource: values.parseSource,

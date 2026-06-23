@@ -13,6 +13,7 @@ export function serializeMatchSummary(match: MatchWithUserStat): MatchSummary {
     result: normalizeResult(match.result),
     side: match.side === "CT" || match.side === "T" ? match.side : null,
     roundsPlayed: match.roundsPlayed,
+    roundsJson: match.roundsJson,
     parseSource: normalizeParseSource(match.parseSource),
     stat: serializeStat(match),
   };

@@ -16,6 +16,7 @@ describe("computeDashboardStats", () => {
     expect(stats.sidePerformanceByMap).toEqual([]);
     expect(stats.streaks).toEqual({ current: null, longestWin: 0, longestLoss: 0 });
     expect(stats.momentum).toBeNull();
+    expect(stats.entryImpact).toBeNull();
   });
 
   test("aggregates overall side performance and excludes null-side matches", () => {
@@ -140,6 +141,48 @@ describe("computeDashboardStats", () => {
       kdDelta: -0.56,
     });
   });
+
+  test("computes entry impact from roundsJson and skips matches without rounds", () => {
+    const stats = computeDashboardStats([
+      match({ id: "no-rounds", day: 1, side: "CT", result: "WIN", kills: 10, deaths: 5, adr: null }),
+      match({
+        id: "with-rounds",
+        day: 2,
+        side: "CT",
+        result: "WIN",
+        kills: 3,
+        deaths: 1,
+        adr: null,
+        roundsJson: JSON.stringify([
+          { round: 1, side: "CT", kills: 2, headshots: 1, damage: 140, died: false, survived: true, entryFragEst: true, entryDeathEst: false, won: true, endReason: "ct_win_elimination" },
+          { round: 2, side: "CT", kills: 0, headshots: 0, damage: 10, died: true, survived: false, entryFragEst: false, entryDeathEst: true, won: false, endReason: "t_win_elimination" },
+        ]),
+      }),
+    ]);
+
+    expect(stats.entryImpact).toEqual({
+      rounds: 2,
+      entryFrags: 1,
+      entryDeaths: 1,
+      entrySuccessRate: 50,
+      survivalRate: 50,
+      multiKillRounds: 1,
+      avgRoundDamage: 75,
+      bySide: {
+        CT: {
+          rounds: 2,
+          entryFrags: 1,
+          entryDeaths: 1,
+          entrySuccessRate: 50,
+          survivalRate: 50,
+          multiKillRounds: 1,
+          avgRoundDamage: 75,
+        },
+        T: null,
+      },
+      trend: [{ date: "2026-06-02T12:00:00.000Z", survivalRate: 50, entryDeathRate: 50 }],
+    });
+  });
 });
 
 function match(overrides: {
@@ -151,6 +194,7 @@ function match(overrides: {
   kills: number;
   deaths: number;
   adr: number | null;
+  roundsJson?: string | null;
 }): MatchWithUserStat {
   return {
     id: overrides.id,
@@ -163,6 +207,7 @@ function match(overrides: {
     result: overrides.result,
     side: overrides.side,
     roundsPlayed: null,
+    roundsJson: overrides.roundsJson ?? null,
     durationMinutes: null,
     notes: null,
     parseSource: "manual",

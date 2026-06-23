@@ -61,6 +61,7 @@ export function mergeMatchInputs(existing: MergeExistingMatch, incoming: MatchIn
     result: existing.result ?? incoming.result,
     side: preferExisting(existing.side, incoming.side),
     roundsPlayed: preferExisting(existing.roundsPlayed, incoming.roundsPlayed),
+    roundsJson: preferExisting(existing.roundsJson, incoming.roundsJson),
     durationMinutes: preferExisting(existing.durationMinutes ?? null, incoming.durationMinutes),
     notes: mergeNotes(existing.notes ?? null, incoming.notes),
     parseSource: existing.parseSource === "gsi" || incoming.parseSource === "gsi" ? "gsi" : richerSource(existing.parseSource, incoming.parseSource),
