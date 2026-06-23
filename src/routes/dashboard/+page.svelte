@@ -22,15 +22,24 @@
   export let data: PageData;
 
   function selectMode(mode: string) {
+    pendingMode = mode;
     goto(mode === "All" ? "/dashboard" : `/dashboard?mode=${encodeURIComponent(mode)}`, { keepFocus: true, noScroll: true });
   }
 
+  const SECTION_LABELS = ["Aim", "Weapons", "Maps", "Form"];
   const SECTION_IDS: Record<string, string> = { Aim: "sec-aim", Weapons: "sec-weapons", Maps: "sec-maps", Form: "sec-form" };
+  let activeSection = "Aim";
+  let pendingMode: string | null = null;
+
   function scrollToSection(label: string) {
+    activeSection = label;
     document.getElementById(SECTION_IDS[label])?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   $: stats = data.stats;
+  // Optimistically highlight the clicked mode until the server load catches up to it.
+  $: if (pendingMode && data.activeMode === pendingMode) pendingMode = null;
+  $: selectedMode = pendingMode ?? data.activeMode;
 
   const RESULT_STYLES: Record<MatchResult, { label: string; class: string }> = {
     WIN: { label: "W", class: "bg-[#2ED573] text-[#0e100f]" },
@@ -68,8 +77,13 @@
   $: winDelta = stats.momentum ? metricDelta(stats.momentum.delta, "pp", 1) : null;
   $: kdDelta = stats.momentum ? metricDelta(stats.momentum.kdDelta, "", 2) : null;
   $: streak = stats.streaks.current;
-  $: streakColor = streak?.result === "WIN" ? "#2ED573" : streak?.result === "LOSS" ? "#FF4757" : "#F2A900";
-  $: streakValue = streak ? `${streak.count} ${streak.result === "WIN" ? "wins" : "losses"}` : "No active streak";
+  $: currentStreakText = streak ? `${streak.count} ${streak.result === "WIN" ? "wins" : "losses"}` : "none";
+  $: bestStreakText =
+    stats.streaks.longestWin === 0 && stats.streaks.longestLoss === 0
+      ? "none"
+      : stats.streaks.longestWin >= stats.streaks.longestLoss
+      ? `${stats.streaks.longestWin} wins`
+      : `${stats.streaks.longestLoss} losses`;
 
   // Right-rail feature cards.
   $: bestWeapon = data.topWeapons[0] ?? null;
@@ -85,7 +99,7 @@
         CS2 <span class="text-[var(--color-primary)]">Performance</span>
       </h1>
     </div>
-    <FilterPills options={data.modes} selected={data.activeMode} onSelect={selectMode} />
+    <FilterPills options={data.modes} selected={selectedMode} onSelect={selectMode} />
   </div>
 
   {#if stats.totalMatches === 0}
@@ -99,7 +113,7 @@
   {:else}
     <!-- category pills (jump to section) -->
     <div class="anim-rise" style="animation-delay:60ms">
-      <FilterPills options={["Aim", "Weapons", "Maps", "Form"]} selected="Aim" size="sm" onSelect={scrollToSection} />
+      <FilterPills options={SECTION_LABELS} bind:selected={activeSection} size="sm" onSelect={scrollToSection} />
     </div>
 
     <!-- Command center: stats | radar | feature cards -->
@@ -116,38 +130,31 @@
           <StatChip label="Win Rate" value={`${stats.winRate}%`} sub={`${stats.wins}W · ${stats.losses}L · ${stats.ties}T`} icon="★" color="#2ED573" delta={winDelta} />
         </div>
         <div class="anim-rise" style="animation-delay:230ms">
-          <StatChip
-            label="CT Win Rate"
-            value={ctPerformance ? `${ctPerformance.winRate}%` : "—"}
-            sub={ctPerformance ? `${ctPerformance.matches} matches · ${ctPerformance.kd.toFixed(2)} K/D` : "No CT matches"}
-            icon="CT"
-            color="#6CA0DC"
-          />
-        </div>
-        <div class="anim-rise" style="animation-delay:250ms">
-          <StatChip
-            label="T Win Rate"
-            value={tPerformance ? `${tPerformance.winRate}%` : "—"}
-            sub={tPerformance ? `${tPerformance.matches} matches · ${tPerformance.kd.toFixed(2)} K/D` : "No T matches"}
-            icon="T"
-            color="#E0A93B"
-          />
+          <div class="glass-card lift grid grid-cols-2 gap-3 px-4 py-3.5">
+            <div class="flex min-w-0 items-center gap-3">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#6CA0DC] text-sm font-bold text-[#0e100f]">CT</span>
+              <div class="min-w-0">
+                <p class="truncate text-xs uppercase tracking-wide text-[var(--color-text-secondary)]">Win Rate</p>
+                <p class="font-[var(--font-mono)] text-xl leading-tight text-[var(--color-text-primary)]">{ctPerformance ? `${ctPerformance.winRate}%` : "—"}</p>
+                <p class="truncate text-xs text-[var(--color-text-muted)]">{ctPerformance ? `${ctPerformance.matches} matches` : "No matches"}</p>
+              </div>
+            </div>
+            <div class="flex min-w-0 items-center gap-3">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#E0A93B] text-sm font-bold text-[#0e100f]">T</span>
+              <div class="min-w-0">
+                <p class="truncate text-xs uppercase tracking-wide text-[var(--color-text-secondary)]">Win Rate</p>
+                <p class="font-[var(--font-mono)] text-xl leading-tight text-[var(--color-text-primary)]">{tPerformance ? `${tPerformance.winRate}%` : "—"}</p>
+                <p class="truncate text-xs text-[var(--color-text-muted)]">{tPerformance ? `${tPerformance.matches} matches` : "No matches"}</p>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="anim-rise" style="animation-delay:260ms">
           <StatChip label="Headshot %" value={fmt(stats.avgHsPercent, "%")} sub={`${stats.totalKills} total kills`} icon="◬" color="#9B5DE5" />
         </div>
-        <div class="anim-rise" style="animation-delay:280ms">
-          <StatChip
-            label="Current streak"
-            value={streakValue}
-            sub={`Best ${stats.streaks.longestWin}W · ${stats.streaks.longestLoss}L`}
-            icon={streak?.result === "LOSS" ? "L" : "W"}
-            color={streakColor}
-          />
-        </div>
 
         <!-- current form mini module -->
-        <div id="sec-form" class="glass-card anim-rise scroll-mt-24 p-4" style="animation-delay:340ms">
+        <div id="sec-form" class="glass-card anim-rise scroll-mt-24 p-4" style="animation-delay:280ms">
           <div class="flex items-center justify-between">
             <p class="text-xs uppercase tracking-wide text-[var(--color-text-secondary)]">Current form</p>
             <span class="font-[var(--font-mono)] text-xs text-[var(--color-text-muted)]">LAST {stats.recentForm.length}</span>
@@ -159,6 +166,7 @@
               </span>
             {/each}
           </div>
+          <p class="mt-3 text-xs text-[var(--color-text-muted)]">Current streak: {currentStreakText} · Best streak: {bestStreakText}</p>
         </div>
       </div>
 

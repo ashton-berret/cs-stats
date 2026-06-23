@@ -12,11 +12,11 @@
     { href: "/settings", label: "Settings" },
   ];
 
-  $: path = $page.url.pathname;
+  $: activeHref = activeNavHref($page.url.pathname);
 
-  function isActive(href: string) {
-    if (href === "/matches") return path === "/matches" || (path.startsWith("/matches/") && path !== "/matches/new");
-    return path === href;
+  function activeNavHref(path: string) {
+    if (path === "/matches" || (path.startsWith("/matches/") && path !== "/matches/new")) return "/matches";
+    return navItems.find((item) => item.href === path)?.href ?? "";
   }
 </script>
 
@@ -31,7 +31,7 @@
       {#each navItems as item}
         <a
           href={item.href}
-          class={`pill px-4 py-2 text-sm font-medium ${isActive(item.href) ? "pill-active" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
+          class={`pill px-4 py-2 text-sm font-medium ${item.href === activeHref ? "pill-active" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
         >
           {item.label}
         </a>
