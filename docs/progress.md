@@ -1,7 +1,7 @@
 # CS2 Casual Stats Tracker - Progress
 
 ## Project Status: All 6 phases implemented (`bun run check` 0/0, `bun run build` ok). Remaining: manual verification of Phase 4 (OCR, needs real 1080p shot), Phase 5 (dashboard dark/light), and Phase 6 (full loop).
-**Last Updated:** 2026-06-22
+**Last Updated:** 2026-06-23
 **Plan:** See `docs/plan.md` for full implementation details. Implementation brief: `CODEX_HANDOFF.md`.
 
 **Scaffold done (verified `bun run check` 0/0, `bun run build` ok):** project configs, exact pinned deps installed
@@ -71,6 +71,8 @@ Remaining Phase 1 items below (foundation ports, auth, nav) are Codex's first ta
 - [x] `PerformanceByMap.svelte` (bar, map-colored via `mapColor`)
 - [x] `HsTrend.svelte` (line)
 - [x] Recent-form pill strip (last 10)
+- [x] Per-side performance: overall CT/T win-rate cards, grouped CT/T by-map chart with Win % / K/D toggle,
+      and pure calculator tests covering null-side exclusion and one-sided maps
 - [ ] Verify: dashboard reflects saved matches; charts render in dark + light (manual — needs a live server + a few saved matches)
 
 > Implementation complete (`bun run check` 0/0). Shared helper `charts/chart-helpers.ts` (`shortDate`, `rollingAverage`).

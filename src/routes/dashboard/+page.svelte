@@ -4,6 +4,7 @@
   import HsTrend from "$lib/components/charts/HsTrend.svelte";
   import ResultsDonut from "$lib/components/charts/ResultsDonut.svelte";
   import PerformanceByMap from "$lib/components/charts/PerformanceByMap.svelte";
+  import SidePerformance from "$lib/components/charts/SidePerformance.svelte";
   import TopWeaponsMini from "$lib/components/charts/TopWeaponsMini.svelte";
   import PerformanceRadar from "$lib/components/dashboard/PerformanceRadar.svelte";
   import StatChip from "$lib/components/dashboard/StatChip.svelte";
@@ -53,6 +54,8 @@
     data.activeMode, // "All" → casual-calibrated (the default treatment)
   );
   $: form = computeFormScore(perfMetrics);
+  $: ctPerformance = stats.sidePerformance.find((entry) => entry.side === "CT") ?? null;
+  $: tPerformance = stats.sidePerformance.find((entry) => entry.side === "T") ?? null;
 
   // Right-rail feature cards.
   $: bestWeapon = data.topWeapons[0] ?? null;
@@ -97,6 +100,24 @@
         </div>
         <div class="anim-rise" style="animation-delay:200ms">
           <StatChip label="Win Rate" value={`${stats.winRate}%`} sub={`${stats.wins}W · ${stats.losses}L · ${stats.ties}T`} icon="★" color="#2ED573" />
+        </div>
+        <div class="anim-rise" style="animation-delay:230ms">
+          <StatChip
+            label="CT Win Rate"
+            value={ctPerformance ? `${ctPerformance.winRate}%` : "—"}
+            sub={ctPerformance ? `${ctPerformance.matches} matches · ${ctPerformance.kd.toFixed(2)} K/D` : "No CT matches"}
+            icon="CT"
+            color="#6CA0DC"
+          />
+        </div>
+        <div class="anim-rise" style="animation-delay:250ms">
+          <StatChip
+            label="T Win Rate"
+            value={tPerformance ? `${tPerformance.winRate}%` : "—"}
+            sub={tPerformance ? `${tPerformance.matches} matches · ${tPerformance.kd.toFixed(2)} K/D` : "No T matches"}
+            icon="T"
+            color="#E0A93B"
+          />
         </div>
         <div class="anim-rise" style="animation-delay:260ms">
           <StatChip label="Headshot %" value={fmt(stats.avgHsPercent, "%")} sub={`${stats.totalKills} total kills`} icon="◬" color="#9B5DE5" />
@@ -175,6 +196,14 @@
       <div id="sec-maps" class="glass-card anim-rise scroll-mt-24 p-5" style="animation-delay:140ms">
         <h2 class="mb-3 font-[var(--font-display)] text-lg">Performance by map</h2>
         <PerformanceByMap data={stats.performanceByMap} />
+      </div>
+      <div class="glass-card anim-rise p-5" style="animation-delay:150ms">
+        <h2 class="mb-3 font-[var(--font-display)] text-lg">Side performance</h2>
+        {#if stats.sidePerformanceByMap.length}
+          <SidePerformance data={stats.sidePerformanceByMap} />
+        {:else}
+          <p class="py-12 text-center text-sm text-[var(--color-text-secondary)]">No CT/T side data recorded yet.</p>
+        {/if}
       </div>
       <div class="glass-card anim-rise p-5" style="animation-delay:160ms">
         <h2 class="mb-3 font-[var(--font-display)] text-lg">Results</h2>

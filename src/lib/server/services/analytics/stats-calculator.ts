@@ -1,6 +1,6 @@
 import type { MatchWithUserStat } from "$lib/server/db/repositories/match-repository";
 import type { DashboardStats } from "$lib/types/analytics";
-import type { MatchResult } from "$lib/types/match";
+import type { MatchResult, MatchSide } from "$lib/types/match";
 import { mapColor } from "$lib/config/maps";
 import { buildActivity, buildPerformanceMetrics, computeFormScore } from "$lib/utils/performance";
 
@@ -54,6 +54,7 @@ const RECENT_FORM_COUNT = 10;
 interface MatchPoint {
   id: string;
   map: string;
+  side: MatchSide | null;
   playedAt: string;
   result: MatchResult;
   kills: number;
@@ -126,6 +127,8 @@ export function computeDashboardStats(matches: MatchWithUserStat[]): DashboardSt
       { result: "TIE", count: ties },
     ],
     performanceByMap: computePerformanceByMap(points),
+    sidePerformance: computeSidePerformance(points),
+    sidePerformanceByMap: computeSidePerformanceByMap(points),
     recentForm: points.slice(-RECENT_FORM_COUNT).map((p) => p.result),
   };
 }
@@ -135,6 +138,7 @@ function toPoint(match: MatchWithUserStat): MatchPoint {
   return {
     id: match.id,
     map: match.map,
+    side: match.side === "CT" || match.side === "T" ? match.side : null,
     playedAt: match.playedAt.toISOString(),
     result: normalizeResult(match.result),
     kills: stat?.kills ?? 0,
@@ -145,6 +149,76 @@ function toPoint(match: MatchWithUserStat): MatchPoint {
     hltvRating: stat?.hltvRating ?? null,
     utilityDamage: stat?.utilityDamage ?? null,
   };
+}
+
+type SideBucket = {
+  matches: number;
+  kills: number;
+  deaths: number;
+  adrSum: number;
+  adrCount: number;
+  wins: number;
+};
+
+function emptySideBucket(): SideBucket {
+  return { matches: 0, kills: 0, deaths: 0, adrSum: 0, adrCount: 0, wins: 0 };
+}
+
+function addToSideBucket(bucket: SideBucket, point: MatchPoint): SideBucket {
+  bucket.matches += 1;
+  bucket.kills += point.kills;
+  bucket.deaths += point.deaths;
+  if (point.adr !== null) {
+    bucket.adrSum += point.adr;
+    bucket.adrCount += 1;
+  }
+  if (point.result === "WIN") bucket.wins += 1;
+  return bucket;
+}
+
+function sideBucketStats(bucket: SideBucket): { matches: number; kd: number; avgAdr: number | null; winRate: number } {
+  return {
+    matches: bucket.matches,
+    kd: ratio(bucket.kills, bucket.deaths),
+    avgAdr: bucket.adrCount === 0 ? null : round(bucket.adrSum / bucket.adrCount, 1),
+    winRate: bucket.matches === 0 ? 0 : round((bucket.wins / bucket.matches) * 100, 1),
+  };
+}
+
+function computeSidePerformance(points: MatchPoint[]): DashboardStats["sidePerformance"] {
+  const buckets: Record<MatchSide, SideBucket> = {
+    CT: emptySideBucket(),
+    T: emptySideBucket(),
+  };
+
+  for (const point of points) {
+    if (point.side === null) continue;
+    addToSideBucket(buckets[point.side], point);
+  }
+
+  return (["CT", "T"] as const)
+    .filter((side) => buckets[side].matches > 0)
+    .map((side) => ({ side, ...sideBucketStats(buckets[side]) }));
+}
+
+function computeSidePerformanceByMap(points: MatchPoint[]): DashboardStats["sidePerformanceByMap"] {
+  const groups = new Map<string, Record<MatchSide, SideBucket>>();
+
+  for (const point of points) {
+    if (point.side === null) continue;
+    const group = groups.get(point.map) ?? { CT: emptySideBucket(), T: emptySideBucket() };
+    addToSideBucket(group[point.side], point);
+    groups.set(point.map, group);
+  }
+
+  return [...groups.entries()]
+    .map(([map, sides]) => ({
+      map,
+      color: mapColor(map),
+      ct: sides.CT.matches === 0 ? null : sideBucketStats(sides.CT),
+      t: sides.T.matches === 0 ? null : sideBucketStats(sides.T),
+    }))
+    .sort((a, b) => (b.ct?.matches ?? 0) + (b.t?.matches ?? 0) - ((a.ct?.matches ?? 0) + (a.t?.matches ?? 0)) || a.map.localeCompare(b.map));
 }
 
 function computePerformanceByMap(points: MatchPoint[]): DashboardStats["performanceByMap"] {

@@ -20,5 +20,18 @@ export interface DashboardStats {
   hsTrend: { date: string; hsPercent: number }[];
   resultBreakdown: { result: MatchResult; count: number }[];
   performanceByMap: { map: string; matches: number; kd: number; avgAdr: number | null; winRate: number; color: string }[];
+  sidePerformance: {
+    side: "CT" | "T";
+    matches: number;
+    kd: number;
+    avgAdr: number | null;
+    winRate: number;
+  }[];
+  sidePerformanceByMap: {
+    map: string;
+    color: string;
+    ct: { matches: number; kd: number; avgAdr: number | null; winRate: number } | null;
+    t: { matches: number; kd: number; avgAdr: number | null; winRate: number } | null;
+  }[];
   recentForm: MatchResult[];
 }
