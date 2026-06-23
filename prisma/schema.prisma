@@ -43,6 +43,7 @@ model UserSettings {
   userId        String   @unique
   inGameName    String   @default("") // used to locate the user's row on the scoreboard
   steamId64     String? // SteamID64 for Steam Web API weapon stats (profile must be public)
+  gsiToken      String? // auth token for Game State Integration POSTs (maps a payload to this user)
   parseEngine   String   @default("vision") // "vision" | "ocr" | "manual"
   ollamaUrl     String   @default("http://localhost:11434")
   ollamaModel   String   @default("qwen3-vl:8b")
@@ -66,9 +67,11 @@ model Match {
   teamScore       Int? // user's team rounds won
   enemyScore      Int? // enemy rounds won
   result          String // "WIN" | "LOSS" | "TIE"
+  side            String? // "CT" | "T" — the side the user played (casual keeps one side per match)
+  roundsPlayed    Int? // rounds the user actually played (may be < teamScore+enemyScore if joined in progress)
   durationMinutes Int?
   notes           String?
-  parseSource     String   @default("manual") // "vision" | "ocr" | "manual"
+  parseSource     String   @default("manual") // "vision" | "ocr" | "manual" | "gsi"
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

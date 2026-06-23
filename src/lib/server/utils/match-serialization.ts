@@ -11,6 +11,8 @@ export function serializeMatchSummary(match: MatchWithUserStat): MatchSummary {
     teamScore: match.teamScore,
     enemyScore: match.enemyScore,
     result: normalizeResult(match.result),
+    side: match.side === "CT" || match.side === "T" ? match.side : null,
+    roundsPlayed: match.roundsPlayed,
     parseSource: normalizeParseSource(match.parseSource),
     stat: serializeStat(match),
   };

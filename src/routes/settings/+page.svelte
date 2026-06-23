@@ -168,6 +168,41 @@
     </Card>
   </form>
 
+  <!-- Game State Integration (auto-capture) -->
+  <Card>
+    <h2 class="text-lg font-semibold">Game integration (auto-capture)</h2>
+    <p class="mt-1 text-sm text-[var(--color-text-secondary)]">
+      Let CS2 report matches automatically — no screenshots. This app must be running while you play.
+      GSI captures core stats, side, and rounds; ADR/utility still need an optional screenshot.
+    </p>
+
+    <ol class="mt-4 space-y-3 text-sm">
+      <li class="flex gap-3">
+        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-[#0e100f]">1</span>
+        <span>
+          <a href="/api/gsi/config" class="font-medium text-[var(--color-primary)] hover:underline" download>Download your config file</a>
+          (it contains your personal token).
+        </span>
+      </li>
+      <li class="flex gap-3">
+        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-[#0e100f]">2</span>
+        <span>
+          Drop <code class="rounded bg-[var(--color-bg-surface-overlay)] px-1">gamestate_integration_csstats.cfg</code> into your CS2 cfg folder:
+          <code class="mt-1 block break-all rounded bg-[var(--color-bg-surface-overlay)] px-2 py-1 text-xs">…\Steam\steamapps\common\Counter-Strike Global Offensive\game\csgo\cfg\</code>
+        </span>
+      </li>
+      <li class="flex gap-3">
+        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-[#0e100f]">3</span>
+        <span>Restart CS2. Matches will save automatically when they end, tagged <code class="rounded bg-[var(--color-bg-surface-overlay)] px-1">gsi</code>.</span>
+      </li>
+    </ol>
+
+    <div class="mt-4 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-surface-overlay)] p-3 text-xs text-[var(--color-text-secondary)]">
+      <p>Endpoint: <code class="break-all">{data.gsi.endpoint}</code></p>
+      <p class="mt-1">Token: <code class="break-all">{data.gsi.token}</code> <span class="text-[var(--color-text-muted)]">(keep private)</span></p>
+    </div>
+  </Card>
+
   <Card>
     <div class="flex items-center justify-between gap-4">
       <div>

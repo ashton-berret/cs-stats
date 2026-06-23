@@ -35,13 +35,16 @@ export function buildPerformanceCalendar(matches: MatchWithUserStat[], days: num
       deaths += match.stats[0]?.deaths ?? 0;
       if (normalizeResult(match.result) === "WIN") wins += 1;
     }
-    const metrics = buildPerformanceMetrics({
-      kd: ratio(kills, deaths),
-      winRate: dayMatches.length ? (wins / dayMatches.length) * 100 : 0,
-      adr: average(dayMatches.map((m) => m.stats[0]?.adr ?? null)),
-      hsPercent: average(dayMatches.map((m) => m.stats[0]?.hsPercent ?? null)),
-      utilityDamage: average(dayMatches.map((m) => m.stats[0]?.utilityDamage ?? null)),
-    });
+    const metrics = buildPerformanceMetrics(
+      {
+        kd: ratio(kills, deaths),
+        winRate: dayMatches.length ? (wins / dayMatches.length) * 100 : 0,
+        adr: average(dayMatches.map((m) => m.stats[0]?.adr ?? null)),
+        hsPercent: average(dayMatches.map((m) => m.stats[0]?.hsPercent ?? null)),
+        utilityDamage: average(dayMatches.map((m) => m.stats[0]?.utilityDamage ?? null)),
+      },
+      dayMatches[0]?.mode ?? "Casual",
+    );
     return { date, count, score: computeFormScore(metrics).score };
   });
 }

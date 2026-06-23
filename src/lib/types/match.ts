@@ -1,6 +1,7 @@
 import type { ParseEngine, Team } from "./parsing";
 
 export type MatchResult = "WIN" | "LOSS" | "TIE";
+export type MatchSide = "CT" | "T";
 
 export interface PlayerStatInput {
   playerName: string;
@@ -24,6 +25,8 @@ export interface MatchInput {
   teamScore: number | null;
   enemyScore: number | null;
   result: MatchResult;
+  side: MatchSide | null;
+  roundsPlayed: number | null;
   durationMinutes: number | null;
   notes: string | null;
   parseSource: ParseEngine;
@@ -38,6 +41,8 @@ export interface MatchSummary {
   teamScore: number | null;
   enemyScore: number | null;
   result: MatchResult;
+  side: MatchSide | null;
+  roundsPlayed: number | null;
   parseSource: ParseEngine;
   stat: PlayerStatInput;
 }
@@ -54,6 +59,8 @@ export interface MatchFormValues {
   teamScore: string;
   enemyScore: string;
   result: MatchResult;
+  side: string;
+  roundsPlayed: string;
   durationMinutes: string;
   notes: string;
   parseSource: ParseEngine;

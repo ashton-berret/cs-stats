@@ -1,4 +1,4 @@
-export type ParseEngine = "vision" | "ocr" | "manual";
+export type ParseEngine = "vision" | "ocr" | "manual" | "gsi";
 export type Team = "OWN" | "ENEMY";
 
 export interface ParsedPlayerRow {

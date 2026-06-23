@@ -17,42 +17,54 @@ interface MetricDef {
   anchors: Anchor[];
 }
 
+// Base anchors are [raw, score] reference points calibrated to documented *competitive (5v5)*
+// CS2 norms: ADR 70-80 good / 85-95 excellent / 95+ outstanding; HS% ~40-45 typical, 55-65 riflers;
+// K/D 1.0 even, ~1.5 strong in matchmaking; utility ~50 light / 130 solid / 220+ heavy support.
+// 100 = clearly elite, ~50 = solid/average. Casual (10v10) is handled by CASUAL_INFLATION below.
 const METRICS: Record<MetricKey, MetricDef> = {
   duels: {
     name: "Duels",
     unit: "K/D",
-    description: "Kill/death ratio — how often you win your gunfights.",
+    description: "Kill/death ratio. ~1.0 is even; 1.3 is strong, 1.6+ is dominant.",
     weight: 0.28,
-    anchors: [[0.6, 15], [0.9, 40], [1.2, 65], [1.6, 90], [2.0, 100]],
+    anchors: [[0.7, 15], [1.0, 50], [1.3, 72], [1.6, 88], [2.0, 100]],
   },
   damage: {
     name: "Damage",
     unit: "ADR",
-    description: "Average damage per round — your overall round-by-round impact.",
+    description: "Average damage per round. ~75 is solid, 85-95 excellent, 100+ outstanding.",
     weight: 0.24,
-    anchors: [[50, 20], [75, 45], [95, 70], [120, 95], [140, 100]],
+    anchors: [[50, 15], [72, 40], [85, 60], [95, 82], [110, 100]],
   },
   aim: {
     name: "Aim",
     unit: "HS%",
-    description: "Headshot percentage — a proxy for crosshair placement and precision.",
+    description: "Headshot %. Most players sit 40-45%; consistent riflers reach 55-65%.",
     weight: 0.2,
-    anchors: [[15, 20], [30, 45], [45, 70], [60, 95], [70, 100]],
+    anchors: [[20, 15], [35, 40], [45, 58], [55, 80], [65, 100]],
   },
   winning: {
     name: "Winning",
     unit: "Win%",
-    description: "Share of tracked matches you've won.",
+    description: "Share of tracked matches won. 50% is even.",
     weight: 0.18,
-    anchors: [[25, 15], [45, 45], [55, 60], [70, 85], [85, 100]],
+    anchors: [[30, 15], [45, 42], [50, 55], [65, 82], [80, 100]],
   },
   utility: {
     name: "Utility",
     unit: "UD/match",
-    description: "Average utility damage per match — grenade value and map control.",
+    description: "Utility damage per match (10v10-calibrated). ~90 is light, ~190 solid, 330+ is heavy support.",
     weight: 0.1,
-    anchors: [[3, 15], [12, 40], [25, 65], [45, 90], [70, 100]],
+    anchors: [[15, 15], [50, 35], [110, 55], [190, 80], [280, 100]],
   },
+};
+
+// 10v10 casual inflates a couple of metrics vs 5v5 competitive (more targets per round; grenades
+// hit clustered groups). We raise the bar for those by scaling their anchor thresholds. HS%, win
+// rate, and K/D (a ratio) are ~player-count independent, so they stay at 1.0. Estimates — tunable.
+const CASUAL_INFLATION: Partial<Record<MetricKey, number>> = {
+  damage: 1.15,
+  utility: 1.7,
 };
 
 const ORDER: MetricKey[] = ["aim", "damage", "duels", "winning", "utility"];
@@ -93,11 +105,18 @@ const RAW_BY_KEY = (input: PerformanceInput): Record<MetricKey, number | null> =
   utility: input.utilityDamage,
 });
 
-export function buildPerformanceMetrics(input: PerformanceInput): PerformanceMetric[] {
+// 5v5 modes use the base (competitive) anchors; everything else (casual, "All", unknown) gets the
+// 10v10 inflation. Wingman is smaller still but rare — treated as base, close enough.
+const FIVE_V_FIVE_MODES = new Set(["competitive", "premier", "wingman"]);
+
+export function buildPerformanceMetrics(input: PerformanceInput, mode = "Casual"): PerformanceMetric[] {
   const raws = RAW_BY_KEY(input);
+  const inflate = !FIVE_V_FIVE_MODES.has(mode.toLowerCase());
   return ORDER.map((key) => {
     const def = METRICS[key];
     const raw = raws[key];
+    const factor = inflate ? CASUAL_INFLATION[key] ?? 1 : 1;
+    const anchors = factor === 1 ? def.anchors : (def.anchors.map(([x, y]) => [x * factor, y]) as Anchor[]);
     const label =
       raw === null ? "—" : key === "aim" || key === "winning" ? `${raw}%` : key === "duels" ? raw.toFixed(2) : `${Math.round(raw)}`;
     return {
@@ -107,7 +126,7 @@ export function buildPerformanceMetrics(input: PerformanceInput): PerformanceMet
       description: def.description,
       raw,
       rawLabel: label,
-      score: raw === null ? 0 : interpolate(def.anchors, raw),
+      score: raw === null ? 0 : interpolate(anchors, raw),
     };
   });
 }

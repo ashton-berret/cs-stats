@@ -1,10 +1,11 @@
 import { MAP_NAMES } from "$lib/config/maps";
-import type { MatchFormValues, MatchInput, MatchResult } from "$lib/types/match";
+import type { MatchFormValues, MatchInput, MatchResult, MatchSide } from "$lib/types/match";
 import type { ParseEngine, Team } from "$lib/types/parsing";
 
 const RESULTS = new Set(["WIN", "LOSS", "TIE"]);
 const TEAMS = new Set(["OWN", "ENEMY"]);
-const PARSE_SOURCES = new Set(["vision", "ocr", "manual"]);
+const SIDES = new Set(["CT", "T"]);
+const PARSE_SOURCES = new Set(["vision", "ocr", "manual", "gsi"]);
 
 export type ParsedMatchForm =
   | { ok: true; input: MatchInput; values: MatchFormValues }
@@ -18,6 +19,8 @@ export function defaultMatchFormValues(playerName = ""): MatchFormValues {
     teamScore: "",
     enemyScore: "",
     result: "WIN",
+    side: "",
+    roundsPlayed: "",
     durationMinutes: "",
     notes: "",
     parseSource: "manual",
@@ -50,6 +53,8 @@ export function parseMatchForm(formData: FormData): ParsedMatchForm {
     teamScore: stringValue(formData, "teamScore"),
     enemyScore: stringValue(formData, "enemyScore"),
     result: normalizeResult(stringValue(formData, "result")),
+    side: normalizeSide(stringValue(formData, "side")),
+    roundsPlayed: stringValue(formData, "roundsPlayed"),
     durationMinutes: stringValue(formData, "durationMinutes"),
     notes: stringValue(formData, "notes"),
     parseSource: normalizeParseSource(stringValue(formData, "parseSource")),
@@ -80,6 +85,7 @@ export function parseMatchForm(formData: FormData): ParsedMatchForm {
   const assists = requiredInt(values.assists, "assists", errors);
   const teamScore = optionalInt(values.teamScore, "teamScore", errors);
   const enemyScore = optionalInt(values.enemyScore, "enemyScore", errors);
+  const roundsPlayed = optionalInt(values.roundsPlayed, "roundsPlayed", errors);
   const durationMinutes = optionalInt(values.durationMinutes, "durationMinutes", errors);
   const mvps = optionalInt(values.mvps, "mvps", errors);
   const enemiesFlashed = optionalInt(values.enemiesFlashed, "enemiesFlashed", errors);
@@ -103,6 +109,8 @@ export function parseMatchForm(formData: FormData): ParsedMatchForm {
       teamScore,
       enemyScore,
       result: values.result,
+      side: values.side ? (values.side as MatchSide) : null,
+      roundsPlayed,
       durationMinutes,
       notes: values.notes.trim() || null,
       parseSource: values.parseSource,
@@ -135,6 +143,10 @@ function normalizeResult(value: string): MatchResult {
 
 function normalizeTeam(value: string): Team {
   return TEAMS.has(value) ? (value as Team) : "OWN";
+}
+
+function normalizeSide(value: string): string {
+  return SIDES.has(value) ? value : "";
 }
 
 function normalizeParseSource(value: string): ParseEngine {

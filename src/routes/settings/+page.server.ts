@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad } from "./$types";
 import { fail } from "@sveltejs/kit";
 import { requireUser } from "$lib/server/auth/guard";
-import { getSettings, updateSettings } from "$lib/server/db/repositories/settings-repository";
+import { getSettings, updateSettings, ensureGsiToken } from "$lib/server/db/repositories/settings-repository";
 import { checkVisionHealth } from "$lib/server/services/parsing";
 import { getOcrResolutionKeys } from "$lib/server/services/parsing/ocr-regions";
 import { fetchUserGameStats, SteamApiError } from "$lib/server/services/steam";
@@ -9,9 +9,10 @@ import { logError } from "$lib/server/utils/logger";
 
 const PARSE_ENGINES = ["vision", "ocr", "manual"];
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
   const user = requireUser(locals);
   const settings = await getSettings(user.id);
+  const gsiToken = await ensureGsiToken(user.id);
   return {
     settings: {
       inGameName: settings.inGameName,
@@ -22,6 +23,7 @@ export const load: PageServerLoad = async ({ locals }) => {
       ocrResolution: settings.ocrResolution,
     },
     ocrResolutions: getOcrResolutionKeys(),
+    gsi: { token: gsiToken, endpoint: `${url.origin}/api/gsi` },
   };
 };
 

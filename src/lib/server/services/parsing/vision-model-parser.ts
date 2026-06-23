@@ -4,9 +4,11 @@ import type { ParserContext, ScoreboardImage, ScoreboardParser } from "./parser-
 import { locateUserRow, reconcileRows } from "./merge";
 import sharp from "sharp";
 
-const OLLAMA_TIMEOUT_MS = 120_000;
-const MAX_VISION_WIDTH = 1600;
-const MAX_VISION_HEIGHT = 900;
+// Generous: a cold model load + a contended GPU (e.g. CS2 still running) can push a single
+// page well past two minutes. Better to wait than to hard-fail the whole parse.
+const OLLAMA_TIMEOUT_MS = 240_000;
+const MAX_VISION_WIDTH = 1400;
+const MAX_VISION_HEIGHT = 800;
 
 const PAGE1_PROMPT = `You are reading a cropped Counter-Strike 2 Casual scoreboard screenshot.
 This is scoreboard page 1. It shows:
@@ -231,7 +233,9 @@ async function prepareImageForVision(image: ScoreboardImage): Promise<Buffer> {
       fit: "inside",
       withoutEnlargement: true,
     })
-    .png({ compressionLevel: 9 })
+    // JPEG keeps the payload small (PNG re-encoding actually inflated screenshots); quality 88
+    // preserves scoreboard text fine for the vision model.
+    .jpeg({ quality: 88 })
     .toBuffer();
 
   logger.info("Vision image prepared", {
@@ -245,7 +249,9 @@ async function prepareImageForVision(image: ScoreboardImage): Promise<Buffer> {
 
 function parseErrorMessage(error: unknown): string {
   if (!(error instanceof Error)) return "unknown parser error";
-  if (error.message.includes("timed out")) return error.message;
+  if (error.message.includes("timed out")) {
+    return `${error.message} — the model may be loading, the image may be too large, or the GPU is busy. Close CS2, use a tightly cropped scoreboard, or switch to OCR in Settings`;
+  }
   if (error.message.includes("fetch failed")) return "Ollama request failed";
   return error.message || "unknown parser error";
 }

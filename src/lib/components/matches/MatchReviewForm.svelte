@@ -17,6 +17,8 @@
     teamScore: "",
     enemyScore: "",
     result: "WIN",
+    side: "",
+    roundsPlayed: "",
     durationMinutes: "",
     notes: "",
     parseSource: "manual",
@@ -54,6 +56,11 @@
 
   const results: MatchResult[] = ["WIN", "LOSS", "TIE"];
   const teams: Team[] = ["OWN", "ENEMY"];
+  const sides: { value: string; label: string }[] = [
+    { value: "", label: "Unknown" },
+    { value: "CT", label: "Counter-Terrorist" },
+    { value: "T", label: "Terrorist" },
+  ];
 </script>
 
 {#if message}
@@ -110,6 +117,29 @@
       <span class="mb-1 block text-sm text-[var(--color-text-secondary)]">Enemy score</span>
       <input name="enemyScore" type="number" min="0" inputmode="numeric" value={current.enemyScore} class={fieldClass("enemyScore")} />
       {#if errorFor("enemyScore")}<span class="mt-1 block text-xs text-[var(--color-danger)]">{errorFor("enemyScore")}</span>{/if}
+    </label>
+
+    <label class="block">
+      <span class="mb-1 block text-sm text-[var(--color-text-secondary)]">Side you played</span>
+      <select name="side" class={fieldClass("side")} value={current.side}>
+        {#each sides as side}
+          <option value={side.value}>{side.label}</option>
+        {/each}
+      </select>
+    </label>
+
+    <label class="block">
+      <span class="mb-1 block text-sm text-[var(--color-text-secondary)]">Rounds you played</span>
+      <input
+        name="roundsPlayed"
+        type="number"
+        min="0"
+        inputmode="numeric"
+        placeholder="defaults to team + enemy score"
+        value={current.roundsPlayed}
+        class={fieldClass("roundsPlayed")}
+      />
+      {#if errorFor("roundsPlayed")}<span class="mt-1 block text-xs text-[var(--color-danger)]">{errorFor("roundsPlayed")}</span>{/if}
     </label>
 
     <label class="block">

@@ -50,6 +50,8 @@ function valuesFromMatch(match: ReturnType<typeof serializeMatchDetail>): MatchF
     teamScore: stringOrEmpty(match.teamScore),
     enemyScore: stringOrEmpty(match.enemyScore),
     result: match.result,
+    side: match.side ?? "",
+    roundsPlayed: stringOrEmpty(match.roundsPlayed),
     durationMinutes: stringOrEmpty(match.durationMinutes),
     notes: match.notes ?? "",
     parseSource: match.parseSource,

@@ -28,7 +28,9 @@
     <div>
       <a href="/matches" class="text-sm text-[var(--color-primary)] hover:opacity-80">Back to matches</a>
       <h1 class="mt-2 font-[var(--font-display)] text-3xl font-bold uppercase tracking-wide text-[var(--color-text-primary)]">{match.map}</h1>
-      <p class="mt-2 text-[var(--color-text-secondary)]">{formatDate(match.playedAt)} · {score} · {match.result}</p>
+      <p class="mt-2 text-[var(--color-text-secondary)]">
+        {formatDate(match.playedAt)} · {score} · {match.result}{#if match.side} · {match.side === "CT" ? "Counter-Terrorist" : "Terrorist"}{/if}{#if match.roundsPlayed} · {match.roundsPlayed} rounds played{/if}
+      </p>
     </div>
 
     <div class="flex gap-2">

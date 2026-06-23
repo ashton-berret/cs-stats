@@ -42,13 +42,16 @@
   const resultWord = (r: MatchResult) => (r === "WIN" ? "Win" : r === "LOSS" ? "Loss" : "Tie");
 
   // Normalized 0–100 performance metrics (drives the radar + Form score).
-  $: perfMetrics = buildPerformanceMetrics({
-    hsPercent: stats.avgHsPercent,
-    adr: stats.avgAdr,
-    kd: stats.kdRatio,
-    winRate: stats.winRate,
-    utilityDamage: stats.avgUtilityDamage,
-  });
+  $: perfMetrics = buildPerformanceMetrics(
+    {
+      hsPercent: stats.avgHsPercent,
+      adr: stats.avgAdr,
+      kd: stats.kdRatio,
+      winRate: stats.winRate,
+      utilityDamage: stats.avgUtilityDamage,
+    },
+    data.activeMode, // "All" → casual-calibrated (the default treatment)
+  );
   $: form = computeFormScore(perfMetrics);
 
   // Right-rail feature cards.
