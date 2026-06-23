@@ -1,32 +1,34 @@
 <script lang="ts">
   import type { EChartsOption } from "echarts";
   import EChart from "./EChart.svelte";
-  import { shortDate, rollingAverage } from "./chart-helpers";
+  import { theme } from "$lib/stores";
+  import { shortDate, rollingAverage, chartColors } from "./chart-helpers";
   import type { DashboardStats } from "$lib/types/analytics";
 
   export let data: DashboardStats["kdTrend"];
 
   const ROLLING_WINDOW = 5;
 
+  $: c = chartColors($theme);
   $: dates = data.map((point) => shortDate(point.date));
   $: kd = data.map((point) => point.kd);
   $: rolling = rollingAverage(kd, ROLLING_WINDOW);
 
   $: option = {
     tooltip: { trigger: "axis" },
-    legend: { data: ["K/D", `${ROLLING_WINDOW}-match avg`], bottom: 0, textStyle: { color: "var(--color-text-secondary)" } },
+    legend: { data: ["K/D", `${ROLLING_WINDOW}-match avg`], bottom: 0, textStyle: { color: c.text } },
     grid: { left: 40, right: 16, top: 16, bottom: 48 },
     xAxis: {
       type: "category",
       data: dates,
       boundaryGap: false,
-      axisLabel: { color: "var(--color-text-secondary)" },
-      axisLine: { lineStyle: { color: "var(--color-border)" } },
+      axisLabel: { color: c.text },
+      axisLine: { lineStyle: { color: c.border } },
     },
     yAxis: {
       type: "value",
-      axisLabel: { color: "var(--color-text-secondary)" },
-      splitLine: { lineStyle: { color: "var(--color-border)", opacity: 0.4 } },
+      axisLabel: { color: c.text },
+      splitLine: { lineStyle: { color: c.border, opacity: 0.5 } },
     },
     series: [
       {
@@ -42,7 +44,7 @@
           symbol: "none",
           data: [{ yAxis: 1 }],
           lineStyle: { color: "#6C757D", type: "dashed" },
-          label: { formatter: "1.0", color: "var(--color-text-secondary)" },
+          label: { formatter: "1.0", color: c.muted },
         },
       },
       {

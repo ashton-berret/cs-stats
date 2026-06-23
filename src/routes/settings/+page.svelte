@@ -9,16 +9,20 @@
 
   let testing = false;
   let saving = false;
+  let steamTesting = false;
 
   // Local copy so the form reflects edits without a full reload after save.
   $: settings = data.settings;
+  // Two-way bound so the Steam test form can read the currently typed id.
+  let steamId = data.settings.steamId64;
   $: saveResult = form && "saved" in form ? form : null;
   $: testResult = form && "tested" in form ? form : null;
+  $: steamResult = form && "steamTested" in form ? form : null;
 </script>
 
 <section class="space-y-6">
   <div>
-    <h1 class="text-3xl font-bold text-[var(--color-text-primary)]">Settings</h1>
+    <h1 class="font-[var(--font-display)] text-3xl font-bold uppercase tracking-wide text-[var(--color-text-primary)]">Settings</h1>
     <p class="mt-2 text-[var(--color-text-secondary)]">Parsing, profile, and appearance.</p>
   </div>
 
@@ -45,6 +49,18 @@
         value={settings.inGameName}
         placeholder="e.g. neovimbtw"
       />
+
+      <label class="mb-3 block">
+        <span class="mb-1 block text-sm text-[var(--color-text-secondary)]">SteamID64 (for weapon stats)</span>
+        <input
+          name="steamId64"
+          bind:value={steamId}
+          placeholder="7656119..."
+          inputmode="numeric"
+          class="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-surface-overlay)] px-3 py-2 text-[var(--color-text-primary)] focus:border-[var(--color-primary)] focus:outline-none"
+        />
+        <span class="mt-1 block text-xs text-[var(--color-text-secondary)]">17-digit ID from your profile URL. Your CS2 profile's game details must be public.</span>
+      </label>
 
       <Select label="Parse engine" name="parseEngine" value={settings.parseEngine}>
         <option value="vision">Vision model (local, recommended)</option>
@@ -113,6 +129,41 @@
             <p class="mt-1 text-[var(--color-text-secondary)]">{testResult.error ?? "Ollama is not responding."} Is Ollama running?</p>
           </div>
         {/if}
+      {/if}
+    </Card>
+  </form>
+
+  <!-- Steam profile test: reads the SteamID typed above -->
+  <form
+    method="POST"
+    action="?/testSteam"
+    use:enhance={() => {
+      steamTesting = true;
+      return async ({ update }) => {
+        await update({ reset: false });
+        steamTesting = false;
+      };
+    }}
+  >
+    <Card>
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-lg font-semibold">Steam profile</h2>
+          <p class="mt-1 text-sm text-[var(--color-text-secondary)]">
+            Check that the SteamID above is valid and its CS2 game details are public.
+          </p>
+        </div>
+        <input type="hidden" name="steamId64" value={steamId} />
+        <Button type="submit" disabled={steamTesting}>{steamTesting ? "Checking…" : "Test Steam profile"}</Button>
+      </div>
+
+      {#if steamResult}
+        <div class={`mt-4 rounded-md border p-3 text-sm ${steamResult.steamOk ? "border-[#2ED573]/40 bg-[#2ED573]/10" : "border-[#FF4757]/40 bg-[#FF4757]/10"}`}>
+          <p class={`font-medium ${steamResult.steamOk ? "text-[#2ED573]" : "text-[#FF4757]"}`}>
+            {steamResult.steamOk ? "✓ Public profile" : "✗ Not available"}
+          </p>
+          <p class="mt-1 text-[var(--color-text-secondary)]">{steamResult.steamMessage}</p>
+        </div>
       {/if}
     </Card>
   </form>

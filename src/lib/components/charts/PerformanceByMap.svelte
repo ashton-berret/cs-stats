@@ -1,10 +1,13 @@
 <script lang="ts">
   import type { EChartsOption } from "echarts";
   import EChart from "./EChart.svelte";
+  import { theme } from "$lib/stores";
+  import { chartColors } from "./chart-helpers";
   import type { DashboardStats } from "$lib/types/analytics";
 
   export let data: DashboardStats["performanceByMap"];
 
+  $: c = chartColors($theme);
   $: maps = data.map((entry) => entry.map);
   $: bars = data.map((entry) => ({ value: entry.kd, itemStyle: { color: entry.color } }));
 
@@ -24,13 +27,13 @@
     xAxis: {
       type: "category",
       data: maps,
-      axisLabel: { color: "var(--color-text-secondary)", interval: 0, rotate: maps.length > 6 ? 30 : 0 },
-      axisLine: { lineStyle: { color: "var(--color-border)" } },
+      axisLabel: { color: c.text, interval: 0, rotate: maps.length > 6 ? 30 : 0 },
+      axisLine: { lineStyle: { color: c.border } },
     },
     yAxis: {
       type: "value",
-      axisLabel: { color: "var(--color-text-secondary)" },
-      splitLine: { lineStyle: { color: "var(--color-border)", opacity: 0.4 } },
+      axisLabel: { color: c.text },
+      splitLine: { lineStyle: { color: c.border, opacity: 0.5 } },
     },
     series: [
       {

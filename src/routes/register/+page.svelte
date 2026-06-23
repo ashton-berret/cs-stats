@@ -42,7 +42,7 @@
         <span class="mb-2 block text-sm text-[var(--color-text-secondary)]">Confirm Password</span>
         <input type="password" name="confirmPassword" required autocomplete="new-password" class="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-surface-overlay)] px-4 py-2" />
       </label>
-      <button type="submit" disabled={loading} class="w-full rounded-md bg-[var(--color-primary)] px-4 py-2 font-medium text-[#0e100f] hover:bg-[var(--color-primary-hover)] disabled:opacity-60">
+      <button type="submit" disabled={loading} class="w-full rounded-full bg-[var(--color-primary)] px-4 py-2 font-medium text-[#0e100f] hover:bg-[var(--color-primary-hover)] disabled:opacity-60">
         {loading ? "Creating..." : "Create account"}
       </button>
     </form>

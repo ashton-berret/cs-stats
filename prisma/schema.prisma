@@ -17,10 +17,11 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  sessions Session[]
-  matches  Match[]
-  stats    PlayerMatchStat[]
-  settings UserSettings?
+  sessions        Session[]
+  matches         Match[]
+  stats           PlayerMatchStat[]
+  settings        UserSettings?
+  weaponSnapshots WeaponStatSnapshot[]
 }
 
 model Session {
@@ -41,6 +42,7 @@ model UserSettings {
   id            String   @id @default(cuid())
   userId        String   @unique
   inGameName    String   @default("") // used to locate the user's row on the scoreboard
+  steamId64     String? // SteamID64 for Steam Web API weapon stats (profile must be public)
   parseEngine   String   @default("vision") // "vision" | "ocr" | "manual"
   ollamaUrl     String   @default("http://localhost:11434")
   ollamaModel   String   @default("qwen3-vl:8b")
@@ -120,6 +122,24 @@ model PlayerMatchStat {
 // ============================================
 // UPLOADED SCREENSHOTS (audit + re-review)
 // ============================================
+
+// ============================================
+// WEAPON STAT SNAPSHOTS (Steam Web API, lifetime totals)
+// Each row is a point-in-time capture of GetUserStatsForGame.
+// Latest = current weapon profile; diff two rows = usage in that window.
+// ============================================
+
+model WeaponStatSnapshot {
+  id         String   @id @default(cuid())
+  userId     String
+  steamId64  String // whose stats these are (snapshotted in case settings change)
+  capturedAt DateTime @default(now())
+  payload    String // normalized JSON: { overall: {...}, weapons: [{ key, kills, shots, hits }] }
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, capturedAt])
+}
 
 model MatchScreenshot {
   id          String   @id @default(cuid())

@@ -13,6 +13,7 @@ export interface DashboardStats {
   avgAdr: number | null;
   avgHsPercent: number | null;
   avgHltvRating: number | null;
+  avgUtilityDamage: number | null;
   bestMatch: { id: string; map: string; kills: number; deaths: number; playedAt: string } | null;
   kdTrend: { date: string; kd: number; kills: number; deaths: number }[];
   adrTrend: { date: string; adr: number }[];

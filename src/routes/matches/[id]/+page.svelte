@@ -27,7 +27,7 @@
   <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
     <div>
       <a href="/matches" class="text-sm text-[var(--color-primary)] hover:opacity-80">Back to matches</a>
-      <h1 class="mt-2 text-3xl font-bold text-[var(--color-text-primary)]">{match.map}</h1>
+      <h1 class="mt-2 font-[var(--font-display)] text-3xl font-bold uppercase tracking-wide text-[var(--color-text-primary)]">{match.map}</h1>
       <p class="mt-2 text-[var(--color-text-secondary)]">{formatDate(match.playedAt)} · {score} · {match.result}</p>
     </div>
 

@@ -2,6 +2,49 @@ import type { MatchWithUserStat } from "$lib/server/db/repositories/match-reposi
 import type { DashboardStats } from "$lib/types/analytics";
 import type { MatchResult } from "$lib/types/match";
 import { mapColor } from "$lib/config/maps";
+import { buildActivity, buildPerformanceMetrics, computeFormScore } from "$lib/utils/performance";
+
+export interface CalendarDay {
+  date: string;
+  count: number;
+  /** 0–100 daily Form score; null when no matches that day. */
+  score: number | null;
+}
+
+/**
+ * GitHub-style calendar over the last `days` days. Each day carries both the match count
+ * (activity view) and the aggregated daily Form score (performance view).
+ */
+export function buildPerformanceCalendar(matches: MatchWithUserStat[], days: number): CalendarDay[] {
+  const byDate = new Map<string, MatchWithUserStat[]>();
+  for (const match of matches) {
+    const key = match.playedAt.toISOString().slice(0, 10);
+    const list = byDate.get(key) ?? [];
+    list.push(match);
+    byDate.set(key, list);
+  }
+
+  return buildActivity(matches.map((m) => m.playedAt.toISOString()), days).map(({ date, count }) => {
+    if (count === 0) return { date, count, score: null };
+    const dayMatches = byDate.get(date) ?? [];
+    let kills = 0;
+    let deaths = 0;
+    let wins = 0;
+    for (const match of dayMatches) {
+      kills += match.stats[0]?.kills ?? 0;
+      deaths += match.stats[0]?.deaths ?? 0;
+      if (normalizeResult(match.result) === "WIN") wins += 1;
+    }
+    const metrics = buildPerformanceMetrics({
+      kd: ratio(kills, deaths),
+      winRate: dayMatches.length ? (wins / dayMatches.length) * 100 : 0,
+      adr: average(dayMatches.map((m) => m.stats[0]?.adr ?? null)),
+      hsPercent: average(dayMatches.map((m) => m.stats[0]?.hsPercent ?? null)),
+      utilityDamage: average(dayMatches.map((m) => m.stats[0]?.utilityDamage ?? null)),
+    });
+    return { date, count, score: computeFormScore(metrics).score };
+  });
+}
 
 const RECENT_FORM_COUNT = 10;
 
@@ -16,6 +59,7 @@ interface MatchPoint {
   adr: number | null;
   hsPercent: number | null;
   hltvRating: number | null;
+  utilityDamage: number | null;
 }
 
 /**
@@ -59,6 +103,7 @@ export function computeDashboardStats(matches: MatchWithUserStat[]): DashboardSt
     avgAdr: average(points.map((p) => p.adr)),
     avgHsPercent: average(points.map((p) => p.hsPercent)),
     avgHltvRating: average(points.map((p) => p.hltvRating)),
+    avgUtilityDamage: average(points.map((p) => p.utilityDamage)),
     bestMatch: pickBestMatch(points),
     kdTrend: points.map((p) => ({
       date: p.playedAt,
@@ -95,6 +140,7 @@ function toPoint(match: MatchWithUserStat): MatchPoint {
     adr: stat?.adr ?? null,
     hsPercent: stat?.hsPercent ?? null,
     hltvRating: stat?.hltvRating ?? null,
+    utilityDamage: stat?.utilityDamage ?? null,
   };
 }
 

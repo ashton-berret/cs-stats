@@ -53,7 +53,7 @@
       <button
         type="submit"
         disabled={loading}
-        class="w-full rounded-md bg-[var(--color-primary)] px-4 py-2 font-medium text-[#0e100f] hover:bg-[var(--color-primary-hover)] disabled:opacity-60"
+        class="w-full rounded-full bg-[var(--color-primary)] px-4 py-2 font-medium text-[#0e100f] hover:bg-[var(--color-primary-hover)] disabled:opacity-60"
       >
         {loading ? "Signing in..." : "Sign in"}
       </button>

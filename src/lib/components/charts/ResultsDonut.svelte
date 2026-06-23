@@ -1,9 +1,13 @@
 <script lang="ts">
   import type { EChartsOption } from "echarts";
   import EChart from "./EChart.svelte";
+  import { theme } from "$lib/stores";
+  import { chartColors } from "./chart-helpers";
   import type { DashboardStats } from "$lib/types/analytics";
 
   export let data: DashboardStats["resultBreakdown"];
+
+  $: c = chartColors($theme);
 
   const LABELS: Record<string, string> = { WIN: "Wins", LOSS: "Losses", TIE: "Ties" };
   const COLORS: Record<string, string> = { WIN: "#2ED573", LOSS: "#FF4757", TIE: "#F2A900" };
@@ -18,7 +22,7 @@
 
   $: option = {
     tooltip: { trigger: "item", formatter: "{b}: {c} ({d}%)" },
-    legend: { bottom: 0, textStyle: { color: "var(--color-text-secondary)" } },
+    legend: { bottom: 0, textStyle: { color: c.text } },
     series: [
       {
         name: "Results",
@@ -26,7 +30,7 @@
         radius: ["45%", "70%"],
         center: ["50%", "45%"],
         avoidLabelOverlap: false,
-        itemStyle: { borderColor: "var(--color-bg-base)", borderWidth: 2 },
+        itemStyle: { borderColor: c.surface, borderWidth: 2 },
         label: { show: false },
         data: pie,
       },

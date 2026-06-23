@@ -20,6 +20,9 @@
     --color-border-hover: #3A424F;
     --color-team-ct: #6CA0DC;
     --color-team-t: #E0A93B;
+    --font-display: "Chakra Petch", system-ui, sans-serif;
+    --font-mono: "Share Tech Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+    --hud-notch: 14px;
 }
 
 /* Light mode overrides */
@@ -105,4 +108,215 @@ body {
 .toggle-switch.active::after {
     transform: translateX(24px);
     background-color: #0E1116;
+}
+
+/* ============================================
+   PREMIUM COMMAND-CENTER LAYER
+   Dark, rounded, glassy. Dribbble-style player dashboard.
+   ============================================ */
+
+.glass-card {
+    position: relative;
+    border-radius: 1.5rem;
+    background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0)) ,
+        var(--color-bg-surface);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.light .glass-card {
+    background: linear-gradient(160deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0)), var(--color-bg-surface);
+    border-color: var(--color-border);
+    box-shadow: 0 18px 40px -28px rgba(0, 0, 0, 0.25);
+}
+
+/* Hover lift for interactive cards. */
+.lift {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 26px 50px -24px rgba(0, 0, 0, 0.9);
+}
+
+/* Pill navigation. */
+.pillbar {
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(12px);
+}
+.pill {
+    border-radius: 9999px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    white-space: nowrap;
+}
+.pill-active {
+    background: var(--color-primary);
+    color: #0e100f;
+    box-shadow: 0 6px 18px -6px var(--color-primary-glow);
+}
+
+/* Entrance + ambient animations. */
+@keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.anim-rise {
+    opacity: 0;
+    animation: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes floaty {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+.float-slow {
+    animation: floaty 6s ease-in-out infinite;
+}
+
+@keyframes ringspin {
+    to { transform: rotate(360deg); }
+}
+.ring-spin {
+    animation: ringspin 28s linear infinite;
+}
+
+@keyframes sparkdraw {
+    from { stroke-dashoffset: var(--spark-len, 200); }
+    to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .anim-rise, .float-slow, .ring-spin { animation: none; opacity: 1; }
+}
+
+/* ============================================
+   TACTICAL HUD LAYER
+   Angular CS2-style panels, stencil headers, HUD digits.
+   Opt-in via classes so non-HUD pages are unaffected.
+   ============================================ */
+
+/* Faint grid backdrop for HUD pages. The texture lives on a ::before layer BEHIND
+   the content so the fade mask never touches the actual UI. */
+.hud-grid {
+    position: relative;
+}
+
+.hud-grid::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(var(--color-border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
+    background-size: 44px 44px;
+    background-position: -1px -1px;
+    opacity: 0.5;
+    /* fade the grid to nothing below the top region (masks only this layer) */
+    -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 480px);
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 480px);
+}
+
+/* Keep real content above the texture layer. */
+.hud-grid > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Angular panel with a notched bottom-right corner + left accent rail. */
+.hud-panel {
+    position: relative;
+    background: linear-gradient(160deg, var(--color-bg-surface-elevated), var(--color-bg-surface));
+    border-left: 2px solid var(--color-primary);
+    clip-path: polygon(
+        0 0,
+        100% 0,
+        100% calc(100% - var(--hud-notch)),
+        calc(100% - var(--hud-notch)) 100%,
+        0 100%
+    );
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+/* Diagonal accent stroke along the notch. */
+.hud-panel::after {
+    content: "";
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+    width: calc(var(--hud-notch) * 1.42);
+    height: 2px;
+    background: var(--color-primary);
+    transform-origin: right bottom;
+    transform: rotate(-45deg);
+    opacity: 0.85;
+    pointer-events: none;
+}
+
+.hud-panel.is-accent {
+    box-shadow: 0 0 0 1px var(--color-primary-glow), 0 0 22px -6px var(--color-primary-glow);
+}
+
+.hud-panel:hover {
+    box-shadow: 0 0 24px -8px var(--color-primary-glow);
+}
+
+/* Uppercase, letter-spaced HUD label with a leading tick. */
+.hud-label {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.hud-label::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    background: var(--color-primary);
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+/* Big monospace HUD value (stat numbers). */
+.hud-value {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+    line-height: 1;
+}
+
+/* Section heading: stencil display font, uppercase, bracketed accent bar. */
+.hud-heading {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.hud-heading::before {
+    content: "";
+    width: 3px;
+    height: 1.1em;
+    background: var(--color-primary);
+    box-shadow: 0 0 8px var(--color-primary-glow);
+}
+
+/* Page title in the display face. */
+.hud-title {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
 }

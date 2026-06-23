@@ -1,11 +1,13 @@
 <script lang="ts">
   import type { EChartsOption } from "echarts";
   import EChart from "./EChart.svelte";
-  import { shortDate } from "./chart-helpers";
+  import { theme } from "$lib/stores";
+  import { shortDate, chartColors } from "./chart-helpers";
   import type { DashboardStats } from "$lib/types/analytics";
 
   export let data: DashboardStats["adrTrend"];
 
+  $: c = chartColors($theme);
   $: dates = data.map((point) => shortDate(point.date));
   $: adr = data.map((point) => point.adr);
 
@@ -16,13 +18,13 @@
       type: "category",
       data: dates,
       boundaryGap: false,
-      axisLabel: { color: "var(--color-text-secondary)" },
-      axisLine: { lineStyle: { color: "var(--color-border)" } },
+      axisLabel: { color: c.text },
+      axisLine: { lineStyle: { color: c.border } },
     },
     yAxis: {
       type: "value",
-      axisLabel: { color: "var(--color-text-secondary)" },
-      splitLine: { lineStyle: { color: "var(--color-border)", opacity: 0.4 } },
+      axisLabel: { color: c.text },
+      splitLine: { lineStyle: { color: c.border, opacity: 0.5 } },
     },
     series: [
       {

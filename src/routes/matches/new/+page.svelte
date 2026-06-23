@@ -10,7 +10,7 @@
 
 <section class="space-y-6">
   <div>
-    <h1 class="text-3xl font-bold text-[var(--color-text-primary)]">Add Match</h1>
+    <h1 class="font-[var(--font-display)] text-3xl font-bold uppercase tracking-wide text-[var(--color-text-primary)]">Add Match</h1>
     <p class="mt-2 text-[var(--color-text-secondary)]">Parse cropped scoreboard screenshots or enter the match manually.</p>
   </div>
 

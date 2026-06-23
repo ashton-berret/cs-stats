@@ -2,6 +2,7 @@ import { prisma } from "$lib/server/db/client";
 
 export interface SettingsInput {
   inGameName: string;
+  steamId64: string | null;
   parseEngine: string;
   ollamaUrl: string;
   ollamaModel: string;

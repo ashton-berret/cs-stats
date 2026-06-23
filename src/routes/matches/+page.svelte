@@ -34,12 +34,12 @@
 <section class="space-y-6">
   <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
-      <h1 class="text-3xl font-bold text-[var(--color-text-primary)]">Matches</h1>
+      <h1 class="font-[var(--font-display)] text-3xl font-bold uppercase tracking-wide text-[var(--color-text-primary)]">Matches</h1>
       <p class="mt-2 text-[var(--color-text-secondary)]">Saved CS2 casual matches will be listed here.</p>
     </div>
     <a
       href="/matches/new"
-      class="rounded-md bg-[var(--color-primary)] px-4 py-2 text-center font-medium text-[#0e100f] hover:bg-[var(--color-primary-hover)]"
+      class="rounded-full bg-[var(--color-primary)] px-4 py-2 text-center font-medium text-[#0e100f] hover:bg-[var(--color-primary-hover)]"
     >
       Add Match
     </a>
@@ -63,7 +63,7 @@
     <Card>
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p class="text-sm text-[var(--color-text-secondary)]">No matches yet. Add one manually to start tracking.</p>
-        <a href="/matches/new" class="rounded-md bg-[var(--color-primary)] px-4 py-2 text-center font-medium text-[#0e100f] hover:bg-[var(--color-primary-hover)]">
+        <a href="/matches/new" class="rounded-full bg-[var(--color-primary)] px-4 py-2 text-center font-medium text-[#0e100f] hover:bg-[var(--color-primary-hover)]">
           Add Match
         </a>
       </div>

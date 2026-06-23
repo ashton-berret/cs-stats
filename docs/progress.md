@@ -1,6 +1,6 @@
 # CS2 Casual Stats Tracker - Progress
 
-## Project Status: Phase 3 Vision Parsing Complete - Phase 4 OCR Implementation Complete, OCR Screenshot Verification Pending
+## Project Status: All 6 phases implemented (`bun run check` 0/0, `bun run build` ok). Remaining: manual verification of Phase 4 (OCR, needs real 1080p shot), Phase 5 (dashboard dark/light), and Phase 6 (full loop).
 **Last Updated:** 2026-06-22
 **Plan:** See `docs/plan.md` for full implementation details. Implementation brief: `CODEX_HANDOFF.md`.
 
@@ -63,21 +63,25 @@ Remaining Phase 1 items below (foundation ports, auth, nav) are Codex's first ta
 - [ ] Verify: OCR parses a 1080p scoreboard; clear warning when no profile matches
 
 ### Phase 5: Dashboard & Charts
-- [ ] `stats-calculator.ts` (all `DashboardStats` computations; K/D + rates derived)
-- [ ] `/dashboard` page: metric cards (Matches, K/D, Avg ADR, Win Rate)
-- [ ] `KDTrend.svelte` (line + rolling avg)
-- [ ] `AdrTrend.svelte` (line)
-- [ ] `ResultsDonut.svelte` (W/L/T)
-- [ ] `PerformanceByMap.svelte` (bar, map-colored)
-- [ ] `HsTrend.svelte` (line)
-- [ ] Recent-form pill strip (last 10)
-- [ ] Verify: dashboard reflects saved matches; charts render in dark + light
+- [x] `stats-calculator.ts` (all `DashboardStats` computations; K/D + rates derived) — in `services/analytics/`, plus `index.ts` barrel
+- [x] `/dashboard` page: metric cards (Matches, K/D, Avg ADR, Win Rate) with subtitles + relative "last played"
+- [x] `KDTrend.svelte` (line + 5-match rolling avg + 1.0 reference line)
+- [x] `AdrTrend.svelte` (line)
+- [x] `ResultsDonut.svelte` (W/L/T)
+- [x] `PerformanceByMap.svelte` (bar, map-colored via `mapColor`)
+- [x] `HsTrend.svelte` (line)
+- [x] Recent-form pill strip (last 10)
+- [ ] Verify: dashboard reflects saved matches; charts render in dark + light (manual — needs a live server + a few saved matches)
+
+> Implementation complete (`bun run check` 0/0). Shared helper `charts/chart-helpers.ts` (`shortDate`, `rollingAverage`).
+> ADR/HS trend cards show a "no data yet" note when those nullable stats are absent. Chart series use concrete hex
+> colors (canvas can't resolve CSS `var()`); axis/text styling uses vars and is re-applied on theme change by `EChart.svelte`.
 
 ### Phase 6: Settings & Polish
-- [ ] `/settings` page: in-game name, parse engine, Ollama URL/model + Test connection, OCR profile, theme
-- [ ] `utils/format.ts` (ratio, percent, relative date, duration)
-- [ ] Empty states (no matches, no screenshots), parse loading state, responsive layout
-- [ ] Verify: full loop end-to-end; `bun run check` clean
+- [x] `/settings` page: in-game name, parse engine, Ollama URL/model + Test connection, OCR profile, theme (save + testConnection actions via `use:enhance`)
+- [x] `utils/format.ts` (ratio, percent, relative date, duration, date) — dashboard now consumes `relativeDate`
+- [x] Empty states (dashboard, matches list, filtered list), parse loading state (spinner + elapsed timer + progress bar in `ScoreboardUpload`), responsive layout (sm/md/lg grids)
+- [ ] Verify: full loop end-to-end (manual). `bun run check` clean ✓, `bun run build` ✓.
 
 ---
 
