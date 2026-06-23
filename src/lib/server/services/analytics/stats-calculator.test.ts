@@ -14,6 +14,8 @@ describe("computeDashboardStats", () => {
     expect(stats.performanceByMap).toEqual([]);
     expect(stats.sidePerformance).toEqual([]);
     expect(stats.sidePerformanceByMap).toEqual([]);
+    expect(stats.streaks).toEqual({ current: null, longestWin: 0, longestLoss: 0 });
+    expect(stats.momentum).toBeNull();
   });
 
   test("aggregates overall side performance and excludes null-side matches", () => {
@@ -54,10 +56,95 @@ describe("computeDashboardStats", () => {
       },
     ]);
   });
+
+  test("detects current and longest streaks with alternating results", () => {
+    const stats = computeDashboardStats([
+      match({ id: "m1", day: 1, side: "CT", result: "WIN", kills: 10, deaths: 5, adr: null }),
+      match({ id: "m2", day: 2, side: "CT", result: "LOSS", kills: 6, deaths: 8, adr: null }),
+      match({ id: "m3", day: 3, side: "CT", result: "WIN", kills: 11, deaths: 6, adr: null }),
+      match({ id: "m4", day: 4, side: "CT", result: "LOSS", kills: 5, deaths: 9, adr: null }),
+    ]);
+
+    expect(stats.streaks).toEqual({ current: { result: "LOSS", count: 1 }, longestWin: 1, longestLoss: 1 });
+  });
+
+  test("counts all-win streaks", () => {
+    const stats = computeDashboardStats([
+      match({ id: "w1", day: 1, side: "CT", result: "WIN", kills: 10, deaths: 5, adr: null }),
+      match({ id: "w2", day: 2, side: "T", result: "WIN", kills: 10, deaths: 5, adr: null }),
+      match({ id: "w3", day: 3, side: "CT", result: "WIN", kills: 10, deaths: 5, adr: null }),
+    ]);
+
+    expect(stats.streaks).toEqual({ current: { result: "WIN", count: 3 }, longestWin: 3, longestLoss: 0 });
+  });
+
+  test("ties break win and loss streaks", () => {
+    const stats = computeDashboardStats([
+      match({ id: "t1", day: 1, side: "CT", result: "WIN", kills: 10, deaths: 5, adr: null }),
+      match({ id: "t2", day: 2, side: "CT", result: "WIN", kills: 10, deaths: 5, adr: null }),
+      match({ id: "t3", day: 3, side: "CT", result: "TIE", kills: 10, deaths: 5, adr: null }),
+      match({ id: "t4", day: 4, side: "CT", result: "WIN", kills: 10, deaths: 5, adr: null }),
+      match({ id: "t5", day: 5, side: "CT", result: "LOSS", kills: 5, deaths: 10, adr: null }),
+      match({ id: "t6", day: 6, side: "CT", result: "TIE", kills: 10, deaths: 10, adr: null }),
+    ]);
+
+    expect(stats.streaks).toEqual({ current: null, longestWin: 2, longestLoss: 1 });
+  });
+
+  test("momentum stays null until two full windows are available", () => {
+    const stats = computeDashboardStats(
+      Array.from({ length: 9 }, (_, index) =>
+        match({ id: `short-${index}`, day: index + 1, side: "CT", result: "WIN", kills: 10, deaths: 5, adr: null }),
+      ),
+    );
+
+    expect(stats.momentum).toBeNull();
+  });
+
+  test("computes positive momentum deltas from last five vs overall", () => {
+    const stats = computeDashboardStats([
+      ...Array.from({ length: 5 }, (_, index) =>
+        match({ id: `old-loss-${index}`, day: index + 1, side: "CT", result: "LOSS", kills: 5, deaths: 10, adr: null }),
+      ),
+      ...Array.from({ length: 5 }, (_, index) =>
+        match({ id: `new-win-${index}`, day: index + 6, side: "T", result: "WIN", kills: 12, deaths: 6, adr: null }),
+      ),
+    ]);
+
+    expect(stats.momentum).toEqual({
+      recentWinRate: 100,
+      baselineWinRate: 50,
+      delta: 50,
+      recentKd: 2,
+      baselineKd: 1.06,
+      kdDelta: 0.94,
+    });
+  });
+
+  test("computes negative momentum deltas from last five vs overall", () => {
+    const stats = computeDashboardStats([
+      ...Array.from({ length: 5 }, (_, index) =>
+        match({ id: `old-win-${index}`, day: index + 1, side: "CT", result: "WIN", kills: 12, deaths: 6, adr: null }),
+      ),
+      ...Array.from({ length: 5 }, (_, index) =>
+        match({ id: `new-loss-${index}`, day: index + 6, side: "T", result: "LOSS", kills: 5, deaths: 10, adr: null }),
+      ),
+    ]);
+
+    expect(stats.momentum).toEqual({
+      recentWinRate: 0,
+      baselineWinRate: 50,
+      delta: -50,
+      recentKd: 0.5,
+      baselineKd: 1.06,
+      kdDelta: -0.56,
+    });
+  });
 });
 
 function match(overrides: {
   id: string;
+  day?: number;
   map?: string;
   side: MatchSide | null;
   result: "WIN" | "LOSS" | "TIE";
@@ -70,7 +157,7 @@ function match(overrides: {
     userId: "user-1",
     map: overrides.map ?? "Mirage",
     mode: "Casual",
-    playedAt: new Date(`2026-06-${String(10 + Math.abs(hashCode(overrides.id)) % 10).padStart(2, "0")}T12:00:00Z`),
+    playedAt: new Date(`2026-06-${String(overrides.day ?? 10 + Math.abs(hashCode(overrides.id)) % 10).padStart(2, "0")}T12:00:00Z`),
     teamScore: null,
     enemyScore: null,
     result: overrides.result,

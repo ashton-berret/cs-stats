@@ -73,6 +73,9 @@ Remaining Phase 1 items below (foundation ports, auth, nav) are Codex's first ta
 - [x] Recent-form pill strip (last 10)
 - [x] Per-side performance: overall CT/T win-rate cards, grouped CT/T by-map chart with Win % / K/D toggle,
       and pure calculator tests covering null-side exclusion and one-sided maps
+- [x] Streaks and momentum: current/longest win-loss streaks, last-5-vs-overall win-rate/KD deltas,
+      dashboard indicators, and pure calculator tests covering alternating results, all-win runs, tie resets,
+      momentum sign, and the `< 2N` null guard
 - [ ] Verify: dashboard reflects saved matches; charts render in dark + light (manual — needs a live server + a few saved matches)
 
 > Implementation complete (`bun run check` 0/0). Shared helper `charts/chart-helpers.ts` (`shortDate`, `rollingAverage`).

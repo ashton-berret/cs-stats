@@ -50,6 +50,7 @@ export function buildPerformanceCalendar(matches: MatchWithUserStat[], days: num
 }
 
 const RECENT_FORM_COUNT = 10;
+const MOMENTUM_WINDOW = 5;
 
 interface MatchPoint {
   id: string;
@@ -129,6 +130,8 @@ export function computeDashboardStats(matches: MatchWithUserStat[]): DashboardSt
     performanceByMap: computePerformanceByMap(points),
     sidePerformance: computeSidePerformance(points),
     sidePerformanceByMap: computeSidePerformanceByMap(points),
+    streaks: computeStreaks(points),
+    momentum: computeMomentum(points),
     recentForm: points.slice(-RECENT_FORM_COUNT).map((p) => p.result),
   };
 }
@@ -219,6 +222,74 @@ function computeSidePerformanceByMap(points: MatchPoint[]): DashboardStats["side
       t: sides.T.matches === 0 ? null : sideBucketStats(sides.T),
     }))
     .sort((a, b) => (b.ct?.matches ?? 0) + (b.t?.matches ?? 0) - ((a.ct?.matches ?? 0) + (a.t?.matches ?? 0)) || a.map.localeCompare(b.map));
+}
+
+function computeStreaks(points: MatchPoint[]): DashboardStats["streaks"] {
+  let current: DashboardStats["streaks"]["current"] = null;
+  const newest = points.at(-1);
+  if (newest && newest.result !== "TIE") {
+    let count = 0;
+    for (let index = points.length - 1; index >= 0; index -= 1) {
+      if (points[index].result !== newest.result) break;
+      count += 1;
+    }
+    current = { result: newest.result, count };
+  }
+
+  let longestWin = 0;
+  let longestLoss = 0;
+  let runResult: MatchResult | null = null;
+  let runCount = 0;
+
+  for (const point of points) {
+    if (point.result === "TIE") {
+      runResult = null;
+      runCount = 0;
+      continue;
+    }
+
+    if (point.result === runResult) {
+      runCount += 1;
+    } else {
+      runResult = point.result;
+      runCount = 1;
+    }
+
+    if (point.result === "WIN") longestWin = Math.max(longestWin, runCount);
+    if (point.result === "LOSS") longestLoss = Math.max(longestLoss, runCount);
+  }
+
+  return { current, longestWin, longestLoss };
+}
+
+function computeMomentum(points: MatchPoint[]): DashboardStats["momentum"] {
+  if (points.length < MOMENTUM_WINDOW * 2) return null;
+
+  const recent = points.slice(-MOMENTUM_WINDOW);
+  const recentWinRate = winRateFor(recent);
+  const baselineWinRate = winRateFor(points);
+  const recentKd = ratio(
+    recent.reduce((sum, point) => sum + point.kills, 0),
+    recent.reduce((sum, point) => sum + point.deaths, 0),
+  );
+  const baselineKd = ratio(
+    points.reduce((sum, point) => sum + point.kills, 0),
+    points.reduce((sum, point) => sum + point.deaths, 0),
+  );
+
+  return {
+    recentWinRate,
+    baselineWinRate,
+    delta: round(recentWinRate - baselineWinRate, 1),
+    recentKd,
+    baselineKd,
+    kdDelta: round(recentKd - baselineKd, 2),
+  };
+}
+
+function winRateFor(points: MatchPoint[]): number {
+  if (points.length === 0) return 0;
+  return round((points.filter((point) => point.result === "WIN").length / points.length) * 100, 1);
 }
 
 function computePerformanceByMap(points: MatchPoint[]): DashboardStats["performanceByMap"] {

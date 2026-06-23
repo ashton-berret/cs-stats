@@ -42,6 +42,14 @@
   }
   const resultWord = (r: MatchResult) => (r === "WIN" ? "Win" : r === "LOSS" ? "Loss" : "Tie");
 
+  function metricDelta(value: number, suffix: string, decimals: number) {
+    const abs = Math.abs(value).toFixed(decimals);
+    return {
+      value: `${abs}${suffix}`,
+      direction: value > 0 ? "up" : value < 0 ? "down" : "flat",
+    } as const;
+  }
+
   // Normalized 0–100 performance metrics (drives the radar + Form score).
   $: perfMetrics = buildPerformanceMetrics(
     {
@@ -56,6 +64,11 @@
   $: form = computeFormScore(perfMetrics);
   $: ctPerformance = stats.sidePerformance.find((entry) => entry.side === "CT") ?? null;
   $: tPerformance = stats.sidePerformance.find((entry) => entry.side === "T") ?? null;
+  $: winDelta = stats.momentum ? metricDelta(stats.momentum.delta, "pp", 1) : null;
+  $: kdDelta = stats.momentum ? metricDelta(stats.momentum.kdDelta, "", 2) : null;
+  $: streak = stats.streaks.current;
+  $: streakColor = streak?.result === "WIN" ? "#2ED573" : streak?.result === "LOSS" ? "#FF4757" : "#F2A900";
+  $: streakValue = streak ? `${streak.count} ${streak.result === "WIN" ? "wins" : "losses"}` : "No active streak";
 
   // Right-rail feature cards.
   $: bestWeapon = data.topWeapons[0] ?? null;
@@ -93,13 +106,13 @@
       <!-- left rail -->
       <div class="order-2 space-y-4 lg:order-1 lg:col-span-3">
         <div class="anim-rise" style="animation-delay:80ms">
-          <StatChip label="K/D Ratio" value={stats.kdRatio.toFixed(2)} sub={`${stats.totalKills} K / ${stats.totalDeaths} D`} icon="⚔" />
+          <StatChip label="K/D Ratio" value={stats.kdRatio.toFixed(2)} sub={`${stats.totalKills} K / ${stats.totalDeaths} D`} icon="⚔" delta={kdDelta} />
         </div>
         <div class="anim-rise" style="animation-delay:140ms">
           <StatChip label="Avg ADR" value={fmt(stats.avgAdr)} sub={`avg HS ${fmt(stats.avgHsPercent, "%")}`} icon="◎" color="#4A9EFF" />
         </div>
         <div class="anim-rise" style="animation-delay:200ms">
-          <StatChip label="Win Rate" value={`${stats.winRate}%`} sub={`${stats.wins}W · ${stats.losses}L · ${stats.ties}T`} icon="★" color="#2ED573" />
+          <StatChip label="Win Rate" value={`${stats.winRate}%`} sub={`${stats.wins}W · ${stats.losses}L · ${stats.ties}T`} icon="★" color="#2ED573" delta={winDelta} />
         </div>
         <div class="anim-rise" style="animation-delay:230ms">
           <StatChip
@@ -122,9 +135,18 @@
         <div class="anim-rise" style="animation-delay:260ms">
           <StatChip label="Headshot %" value={fmt(stats.avgHsPercent, "%")} sub={`${stats.totalKills} total kills`} icon="◬" color="#9B5DE5" />
         </div>
+        <div class="anim-rise" style="animation-delay:280ms">
+          <StatChip
+            label="Current streak"
+            value={streakValue}
+            sub={`Best ${stats.streaks.longestWin}W · ${stats.streaks.longestLoss}L`}
+            icon={streak?.result === "LOSS" ? "L" : "W"}
+            color={streakColor}
+          />
+        </div>
 
         <!-- current form mini module -->
-        <div id="sec-form" class="glass-card anim-rise scroll-mt-24 p-4" style="animation-delay:320ms">
+        <div id="sec-form" class="glass-card anim-rise scroll-mt-24 p-4" style="animation-delay:340ms">
           <div class="flex items-center justify-between">
             <p class="text-xs uppercase tracking-wide text-[var(--color-text-secondary)]">Current form</p>
             <span class="font-[var(--font-mono)] text-xs text-[var(--color-text-muted)]">LAST {stats.recentForm.length}</span>

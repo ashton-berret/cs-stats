@@ -33,5 +33,18 @@ export interface DashboardStats {
     ct: { matches: number; kd: number; avgAdr: number | null; winRate: number } | null;
     t: { matches: number; kd: number; avgAdr: number | null; winRate: number } | null;
   }[];
+  streaks: {
+    current: { result: MatchResult; count: number } | null;
+    longestWin: number;
+    longestLoss: number;
+  };
+  momentum: {
+    recentWinRate: number;
+    baselineWinRate: number;
+    delta: number;
+    recentKd: number;
+    baselineKd: number;
+    kdDelta: number;
+  } | null;
   recentForm: MatchResult[];
 }
