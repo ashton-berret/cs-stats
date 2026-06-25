@@ -1,11 +1,13 @@
 <script lang="ts">
   import { mapColor } from "$lib/config/maps";
+  import { ratingForMatch } from "$lib/utils/rating";
   import type { MatchSummary } from "$lib/types/match";
 
   export let match: MatchSummary;
 
   $: stat = match.stat;
   $: kd = stat.deaths === 0 ? stat.kills : stat.kills / stat.deaths;
+  $: rating = ratingForMatch(match);
   $: resultClass =
     match.result === "WIN"
       ? "bg-[var(--color-success)]/10 text-[var(--color-success)]"
@@ -37,7 +39,16 @@
       </p>
     </div>
 
-    <div class="grid grid-cols-3 gap-4 text-right sm:min-w-64">
+    <div class="grid grid-cols-2 gap-4 text-right sm:min-w-80 sm:grid-cols-4">
+      <div>
+        <div class="text-sm text-[var(--color-text-secondary)]">Rating</div>
+        <div class="font-semibold" title={rating?.estimated ? "Raw HLTV 1.0 · estimated (no per-round data)" : "Raw HLTV 1.0 · exact (round timeline)"}>
+          {rating ? rating.value.toFixed(2) : "-"}{#if rating?.estimated}<span class="text-xs text-[var(--color-text-muted)]">*</span>{/if}
+        </div>
+        {#if rating && rating.casual !== rating.value}
+          <div class="text-xs text-[var(--color-text-muted)]">{rating.casual.toFixed(2)} cas.</div>
+        {/if}
+      </div>
       <div>
         <div class="text-sm text-[var(--color-text-secondary)]">K/D/A</div>
         <div class="font-semibold">{stat.kills}/{stat.deaths}/{stat.assists}</div>

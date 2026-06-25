@@ -167,7 +167,6 @@ describe("computeDashboardStats", () => {
       entrySuccessRate: 50,
       survivalRate: 50,
       multiKillRounds: 1,
-      avgRoundDamage: 75,
       bySide: {
         CT: {
           rounds: 2,
@@ -176,7 +175,6 @@ describe("computeDashboardStats", () => {
           entrySuccessRate: 50,
           survivalRate: 50,
           multiKillRounds: 1,
-          avgRoundDamage: 75,
         },
         T: null,
       },

@@ -54,6 +54,17 @@ export interface MatchDetail extends MatchSummary {
   notes: string | null;
 }
 
+/** A GSI-captured match still missing the manually-entered stats (ADR/HS%/UD/flashes). */
+export interface PendingReview {
+  id: string;
+  map: string;
+  mode: string;
+  playedAt: string;
+  result: MatchResult;
+  teamScore: number | null;
+  enemyScore: number | null;
+}
+
 export interface MatchFormValues {
   map: string;
   mode: string;

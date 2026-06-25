@@ -34,7 +34,6 @@ function summarize(records: RoundRecord[]): Omit<RoundSideAnalytics, "rounds"> &
     entrySuccessRate: attempts === 0 ? null : round((entryFrags / attempts) * 100, 1),
     survivalRate: round((records.filter((record) => record.survived).length / records.length) * 100, 1),
     multiKillRounds: records.filter((record) => record.kills >= 2).length,
-    avgRoundDamage: round(records.reduce((sum, record) => sum + record.damage, 0) / records.length, 1),
   };
 }
 

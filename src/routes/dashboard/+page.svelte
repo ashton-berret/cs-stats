@@ -12,6 +12,7 @@
   import FeatureCard from "$lib/components/dashboard/FeatureCard.svelte";
   import FilterPills from "$lib/components/dashboard/FilterPills.svelte";
   import MatchHeatmap from "$lib/components/dashboard/MatchHeatmap.svelte";
+  import ReviewBanner from "$lib/components/dashboard/ReviewBanner.svelte";
   import SourceTag from "$lib/components/dashboard/SourceTag.svelte";
   import { goto } from "$app/navigation";
   import { relativeDate } from "$lib/utils/format";
@@ -51,6 +52,17 @@
     return value === null ? "—" : `${value}${suffix}`;
   }
   const resultWord = (r: MatchResult) => (r === "WIN" ? "Win" : r === "LOSS" ? "Loss" : "Tie");
+
+  // Build the `pb` prop for a StatChip from a PersonalBest record (best single-match value + link).
+  function pbProp(best: { value: number; matchId: string; map: string; playedAt: string } | null, format: (v: number) => string, label: string | null = null) {
+    if (!best) return null;
+    return {
+      value: format(best.value),
+      href: `/matches/${best.matchId}`,
+      title: `Best ${label ?? "result"}: ${format(best.value)} — ${best.map}, ${relativeDate(best.playedAt)}`,
+      label: label ?? undefined,
+    };
+  }
 
   function metricDelta(value: number, suffix: string, decimals: number) {
     const abs = Math.abs(value).toFixed(decimals);
@@ -102,6 +114,9 @@
     <FilterPills options={data.modes} selected={selectedMode} onSelect={selectMode} />
   </div>
 
+  <!-- Live prompt for GSI matches still missing manually-entered stats. -->
+  <ReviewBanner initial={data.pendingReviews} />
+
   {#if stats.totalMatches === 0}
     <div class="glass-card anim-rise flex flex-col items-start gap-4 p-8">
       <h2 class="font-[var(--font-display)] text-2xl">No matches yet</h2>
@@ -120,11 +135,21 @@
     <div class="grid gap-5 lg:grid-cols-12">
       <!-- left rail -->
       <div class="order-2 space-y-4 lg:order-1 lg:col-span-3">
+        <div class="anim-rise" style="animation-delay:60ms">
+          <StatChip label="HLTV Rating 1.0" value={stats.avgHltvRating === null ? "—" : stats.avgHltvRating.toFixed(2)} sub={stats.avgRatingCasual === null ? "raw · 1.0 = pro avg" : `${stats.avgRatingCasual.toFixed(2)} casual-adj`} icon="✦" color="#F2A900" pb={pbProp(stats.personalBests.rating, (v) => v.toFixed(2))} />
+        </div>
         <div class="anim-rise" style="animation-delay:80ms">
-          <StatChip label="K/D Ratio" value={stats.kdRatio.toFixed(2)} sub={`${stats.totalKills} K / ${stats.totalDeaths} D`} icon="⚔" delta={kdDelta} />
+          <StatChip
+            label="K/D Ratio"
+            value={stats.kdRatio.toFixed(2)}
+            sub={`${stats.totalKills} K / ${stats.totalDeaths} D`}
+            icon="⚔"
+            delta={kdDelta}
+            pb={[pbProp(stats.personalBests.kd, (v) => v.toFixed(2), "K/D"), pbProp(stats.personalBests.kills, (v) => String(v), "Kills")].filter((b) => b !== null)}
+          />
         </div>
         <div class="anim-rise" style="animation-delay:140ms">
-          <StatChip label="Avg ADR" value={fmt(stats.avgAdr)} sub={`avg HS ${fmt(stats.avgHsPercent, "%")}`} icon="◎" color="#4A9EFF" />
+          <StatChip label="Avg ADR" value={fmt(stats.avgAdr)} icon="◎" color="#4A9EFF" pb={pbProp(stats.personalBests.adr, (v) => String(Math.round(v)))} />
         </div>
         <div class="anim-rise" style="animation-delay:200ms">
           <StatChip label="Win Rate" value={`${stats.winRate}%`} sub={`${stats.wins}W · ${stats.losses}L · ${stats.ties}T`} icon="★" color="#2ED573" delta={winDelta} />
@@ -150,7 +175,7 @@
           </div>
         </div>
         <div class="anim-rise" style="animation-delay:260ms">
-          <StatChip label="Headshot %" value={fmt(stats.avgHsPercent, "%")} sub={`${stats.totalKills} total kills`} icon="◬" color="#9B5DE5" />
+          <StatChip label="Headshot %" value={fmt(stats.avgHsPercent, "%")} icon="◬" color="#9B5DE5" pb={pbProp(stats.personalBests.hsPercent, (v) => `${Math.round(v)}%`)} />
         </div>
 
         <!-- current form mini module -->
@@ -160,7 +185,7 @@
             <span class="font-[var(--font-mono)] text-xs text-[var(--color-text-muted)]">LAST {stats.recentForm.length}</span>
           </div>
           <div class="mt-3 flex flex-wrap gap-1.5">
-            {#each stats.recentForm as result}
+            {#each [...stats.recentForm].reverse() as result}
               <span class={`flex h-7 w-7 items-center justify-center rounded-lg font-[var(--font-mono)] text-xs font-bold ${RESULT_STYLES[result].class}`}>
                 {RESULT_STYLES[result].label}
               </span>

@@ -157,11 +157,22 @@ export function computeFormScore(metrics: PerformanceMetric[]): FormScore {
   return { score, tier: tier.tier, color: tier.color };
 }
 
-/** Daily match counts over the last `days` days (inclusive of today), oldest first. */
+/**
+ * Local-time YYYY-MM-DD key. Bucketing by the UTC slice of an ISO string pushes evening matches in
+ * behind-UTC timezones onto the next calendar day, so the heatmap reads a day ahead — always derive
+ * the day in local time instead.
+ */
+export function localDateKey(value: Date | string): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/** Daily match counts over the last `days` days (inclusive of today), oldest first. Local-time days. */
 export function buildActivity(playedAt: string[], days: number): { date: string; count: number }[] {
   const counts = new Map<string, number>();
   for (const iso of playedAt) {
-    const key = iso.slice(0, 10);
+    const key = localDateKey(iso);
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   const out: { date: string; count: number }[] = [];
@@ -170,7 +181,7 @@ export function buildActivity(playedAt: string[], days: number): { date: string;
   for (let i = days - 1; i >= 0; i -= 1) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
+    const key = localDateKey(d);
     out.push({ date: key, count: counts.get(key) ?? 0 });
   }
   return out;

@@ -15,6 +15,9 @@
   // Performance ramp (red → green, by daily Form score).
   const EMPTY = "var(--color-bg-surface-overlay)";
   const PERF_COLORS = ["#E5484D", "#F2883E", "#F2C94C", "#7BC96F", "#2EA043"];
+  // Legend hover labels — must mirror perfBucket() / activityLevel() thresholds below.
+  const PERF_RANGES = ["Form 0–34", "Form 35–49", "Form 50–64", "Form 65–79", "Form 80–100"];
+  const ACTIVITY_RANGES = ["0 matches", "1 match", "2 matches", "3 matches", "4+ matches"];
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   function weekday(date: string): number {
@@ -32,16 +35,18 @@
     if (score < 80) return 3;
     return 4;
   }
-  function cellColor(day: { count: number; score: number | null }): string {
-    if (mode === "activity") return ACTIVITY_COLORS[activityLevel(day.count)];
+  // `view` is passed in (not read from the outer `mode`) so the template expression depends on it —
+  // otherwise Svelte won't recolor the grid when the toggle flips, since the call doesn't name `mode`.
+  function cellColor(day: { count: number; score: number | null }, view: "activity" | "performance"): string {
+    if (view === "activity") return ACTIVITY_COLORS[activityLevel(day.count)];
     if (day.count === 0 || day.score === null) return EMPTY;
     return PERF_COLORS[perfBucket(day.score)];
   }
-  function tip(day: { date: string; count: number; score: number | null }): string {
+  function tip(day: { date: string; count: number; score: number | null }, view: "activity" | "performance"): string {
     const [y, m, d] = day.date.split("-").map(Number);
     const when = `${MONTHS[m - 1]} ${d}, ${y}`;
     if (day.count === 0) return `No matches · ${when}`;
-    if (mode === "performance" && day.score !== null) return `Form ${day.score} · ${day.count} ${day.count === 1 ? "match" : "matches"} · ${when}`;
+    if (view === "performance" && day.score !== null) return `Form ${day.score} · ${day.count} ${day.count === 1 ? "match" : "matches"} · ${when}`;
     return `${day.count} ${day.count === 1 ? "match" : "matches"} · ${when}`;
   }
 
@@ -66,6 +71,9 @@
   $: total = days.reduce((s, d) => s + d.count, 0);
   $: activeDays = days.filter((d) => d.count > 0).length;
   $: legendColors = mode === "activity" ? ACTIVITY_COLORS : PERF_COLORS;
+  $: legendRanges = mode === "activity" ? ACTIVITY_RANGES : PERF_RANGES;
+  // Paired swatch + range, listed high→low (best at top) in the vertical legend.
+  $: legendItems = legendColors.map((color, i) => ({ color, range: legendRanges[i] })).reverse();
 </script>
 
 <div class="mb-3 flex items-center justify-between gap-2">
@@ -102,8 +110,8 @@
             {#if day}
               <div
                 class="rounded-[3px] transition-transform hover:scale-125"
-                style={`width:${cell}px;height:${cell}px;background:${cellColor(day)}`}
-                title={tip(day)}
+                style={`width:${cell}px;height:${cell}px;background:${cellColor(day, mode)}`}
+                title={tip(day, mode)}
               ></div>
             {:else}
               <div style={`width:${cell}px;height:${cell}px`}></div>
@@ -115,13 +123,15 @@
   </div>
 </div>
 
-<div class="mt-3 flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
+<div class="mt-3 flex items-end justify-between gap-4 text-xs text-[var(--color-text-secondary)]">
   <span>{mode === "performance" ? "Daily form" : `${total} matches · ${activeDays} active days`}</span>
-  <div class="flex items-center gap-1">
-    <span class="text-[var(--color-text-muted)]">{mode === "performance" ? "Low" : "Less"}</span>
-    {#each legendColors as color}
-      <span class="h-[11px] w-[11px] rounded-[3px]" style={`background:${color}`}></span>
+  <div class="flex flex-col gap-1">
+    <span class="text-[10px] uppercase tracking-wide text-[var(--color-text-muted)]">{mode === "performance" ? "Form score" : "Matches/day"}</span>
+    {#each legendItems as item}
+      <div class="flex items-center gap-2">
+        <span class="h-[11px] w-[11px] shrink-0 rounded-[3px]" style={`background:${item.color}`}></span>
+        <span class="font-[var(--font-mono)] text-[11px] text-[var(--color-text-muted)]">{item.range}</span>
+      </div>
     {/each}
-    <span class="text-[var(--color-text-muted)]">{mode === "performance" ? "High" : "More"}</span>
   </div>
 </div>

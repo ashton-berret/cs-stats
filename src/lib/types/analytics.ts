@@ -1,6 +1,23 @@
 import type { MatchResult } from "./match";
 import type { RoundAnalyticsSummary } from "./rounds";
 
+/** A single-match record value (best so far) plus the match it was set in. */
+export interface PersonalBest {
+  value: number;
+  matchId: string;
+  map: string;
+  playedAt: string;
+}
+
+/** Best single-match value per headline metric (null until at least one match has that stat). */
+export interface PersonalBests {
+  rating: PersonalBest | null;
+  kd: PersonalBest | null;
+  adr: PersonalBest | null;
+  hsPercent: PersonalBest | null;
+  kills: PersonalBest | null;
+}
+
 export interface DashboardStats {
   totalMatches: number;
   wins: number;
@@ -13,9 +30,11 @@ export interface DashboardStats {
   kdRatio: number;
   avgAdr: number | null;
   avgHsPercent: number | null;
-  avgHltvRating: number | null;
+  avgHltvRating: number | null; // raw HLTV Rating 1.0, averaged
+  avgRatingCasual: number | null; // casual-calibrated rating, averaged
   avgUtilityDamage: number | null;
   bestMatch: { id: string; map: string; kills: number; deaths: number; playedAt: string } | null;
+  personalBests: PersonalBests;
   kdTrend: { date: string; kd: number; kills: number; deaths: number }[];
   adrTrend: { date: string; adr: number }[];
   hsTrend: { date: string; hsPercent: number }[];

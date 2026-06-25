@@ -9,11 +9,11 @@ describe("round analytics", () => {
     expect(parseRoundRecords("{}")).toEqual([]);
   });
 
-  test("summarizes entry, survival, multi-kill, damage, and side splits", () => {
+  test("summarizes entry, survival, multi-kill, and side splits", () => {
     const records: RoundRecord[] = [
-      round({ round: 1, side: "CT", kills: 2, damage: 150, survived: true, entryFragEst: true, won: true }),
-      round({ round: 2, side: "CT", kills: 0, damage: 20, died: true, entryDeathEst: true, won: false }),
-      round({ round: 3, side: "T", kills: 1, damage: 70, survived: true, won: true }),
+      round({ round: 1, side: "CT", kills: 2, survived: true, entryFragEst: true, won: true }),
+      round({ round: 2, side: "CT", kills: 0, died: true, entryDeathEst: true, won: false }),
+      round({ round: 3, side: "T", kills: 1, survived: true, won: true }),
     ];
 
     expect(summarizeRoundRecords(records)).toEqual({
@@ -23,7 +23,6 @@ describe("round analytics", () => {
       entrySuccessRate: 50,
       survivalRate: 66.7,
       multiKillRounds: 1,
-      avgRoundDamage: 80,
       bySide: {
         CT: {
           rounds: 2,
@@ -32,7 +31,6 @@ describe("round analytics", () => {
           entrySuccessRate: 50,
           survivalRate: 50,
           multiKillRounds: 1,
-          avgRoundDamage: 85,
         },
         T: {
           rounds: 1,
@@ -41,7 +39,6 @@ describe("round analytics", () => {
           entrySuccessRate: null,
           survivalRate: 100,
           multiKillRounds: 0,
-          avgRoundDamage: 70,
         },
       },
     });

@@ -21,7 +21,6 @@ export interface RoundSideAnalytics {
   entrySuccessRate: number | null;
   survivalRate: number;
   multiKillRounds: number;
-  avgRoundDamage: number;
 }
 
 export interface RoundAnalyticsSummary {
@@ -31,7 +30,6 @@ export interface RoundAnalyticsSummary {
   entrySuccessRate: number | null;
   survivalRate: number;
   multiKillRounds: number;
-  avgRoundDamage: number;
   bySide: {
     CT: RoundSideAnalytics | null;
     T: RoundSideAnalytics | null;

@@ -1,7 +1,8 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "$lib/server/db/client";
 import { mergeMatchInputs } from "$lib/server/services/matching/match-dedup";
-import type { MatchInput, MatchSummary } from "$lib/types/match";
+import { normalizeMode } from "$lib/config/modes";
+import type { MatchInput, MatchSummary, PendingReview } from "$lib/types/match";
 import type { ParseEngine, Team } from "$lib/types/parsing";
 
 const includeUserStat = {
@@ -27,6 +28,27 @@ export async function listMatches(userId: string): Promise<MatchWithUserStat[]> 
     include: includeUserStat,
     orderBy: { playedAt: "desc" },
   });
+}
+
+/**
+ * GSI-captured matches whose user stat row is still missing ADR — the canonical signal that the
+ * manual post-match stats (ADR/HS%/UD/flashes, none of which GSI can read) haven't been entered yet.
+ * Powers the "new match needs your stats" prompt on the dashboard.
+ */
+export async function listPendingGsiReviews(userId: string): Promise<PendingReview[]> {
+  const matches = await prisma.match.findMany({
+    where: { userId, parseSource: "gsi", stats: { some: { isUser: true, adr: null } } },
+    orderBy: { playedAt: "desc" },
+  });
+  return matches.map((m) => ({
+    id: m.id,
+    map: m.map,
+    mode: m.mode,
+    playedAt: m.playedAt.toISOString(),
+    result: m.result === "LOSS" || m.result === "TIE" ? m.result : "WIN",
+    teamScore: m.teamScore,
+    enemyScore: m.enemyScore,
+  }));
 }
 
 export async function getMatch(userId: string, matchId: string): Promise<MatchWithUserStat | null> {
@@ -56,7 +78,7 @@ export async function createMatch(userId: string, input: MatchInput): Promise<Ma
     data: {
       userId,
       map: input.map,
-      mode: input.mode,
+      mode: normalizeMode(input.mode),
       playedAt: input.playedAt,
       teamScore: input.teamScore,
       enemyScore: input.enemyScore,
@@ -90,6 +112,34 @@ export async function createMatch(userId: string, input: MatchInput): Promise<Ma
   });
 }
 
+/** The four post-match scoreboard stats GSI can't read; entered via the dashboard review modal. */
+export interface ManualStatsInput {
+  adr: number | null;
+  hsPercent: number | null;
+  utilityDamage: number | null;
+  enemiesFlashed: number | null;
+}
+
+/**
+ * Patches just the manually-entered stats onto a match's user stat row, leaving everything GSI
+ * captured (kills/deaths/rounds/timeline) untouched. Returns false if the match isn't the user's.
+ */
+export async function updateManualStats(userId: string, matchId: string, input: ManualStatsInput): Promise<boolean> {
+  const match = await prisma.match.findFirst({ where: { id: matchId, userId }, include: includeUserStat });
+  const stat = match?.stats[0];
+  if (!stat) return false;
+  await prisma.playerMatchStat.update({
+    where: { id: stat.id },
+    data: {
+      adr: input.adr,
+      hsPercent: input.hsPercent,
+      utilityDamage: input.utilityDamage,
+      enemiesFlashed: input.enemiesFlashed,
+    },
+  });
+  return true;
+}
+
 export async function updateMatch(userId: string, matchId: string, input: MatchInput): Promise<MatchWithUserStat | null> {
   const existing = await prisma.match.findFirst({
     where: { id: matchId, userId },
@@ -104,7 +154,7 @@ export async function updateMatch(userId: string, matchId: string, input: MatchI
       where: { id: matchId },
       data: {
         map: input.map,
-        mode: input.mode,
+        mode: normalizeMode(input.mode),
         playedAt: input.playedAt,
         teamScore: input.teamScore,
         enemyScore: input.enemyScore,

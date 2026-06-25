@@ -191,12 +191,7 @@
         <input name="adr" type="number" min="0" step="0.1" inputmode="decimal" value={current.adr} class={fieldClass("adr")} />
         {#if errorFor("adr")}<span class="mt-1 block text-xs text-[var(--color-danger)]">{errorFor("adr")}</span>{/if}
       </label>
-    </div>
-  </section>
 
-  <details class="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-4">
-    <summary class="cursor-pointer font-semibold text-[var(--color-text-primary)]">Extended stats</summary>
-    <div class="mt-4 grid gap-4 md:grid-cols-2">
       <label class="block">
         <span class="mb-1 block text-sm text-[var(--color-text-secondary)]">HS percent</span>
         <input name="hsPercent" type="number" min="0" max="100" step="0.1" inputmode="decimal" value={current.hsPercent} class={fieldClass("hsPercent")} />
@@ -204,15 +199,9 @@
       </label>
 
       <label class="block">
-        <span class="mb-1 block text-sm text-[var(--color-text-secondary)]">MVPs</span>
-        <input name="mvps" type="number" min="0" inputmode="numeric" value={current.mvps} class={fieldClass("mvps")} />
-        {#if errorFor("mvps")}<span class="mt-1 block text-xs text-[var(--color-danger)]">{errorFor("mvps")}</span>{/if}
-      </label>
-
-      <label class="block">
-        <span class="mb-1 block text-sm text-[var(--color-text-secondary)]">Rating</span>
-        <input name="hltvRating" type="number" min="0" step="0.01" inputmode="decimal" value={current.hltvRating} class={fieldClass("hltvRating")} />
-        {#if errorFor("hltvRating")}<span class="mt-1 block text-xs text-[var(--color-danger)]">{errorFor("hltvRating")}</span>{/if}
+        <span class="mb-1 block text-sm text-[var(--color-text-secondary)]">Utility damage</span>
+        <input name="utilityDamage" type="number" min="0" inputmode="numeric" value={current.utilityDamage} class={fieldClass("utilityDamage")} />
+        {#if errorFor("utilityDamage")}<span class="mt-1 block text-xs text-[var(--color-danger)]">{errorFor("utilityDamage")}</span>{/if}
       </label>
 
       <label class="block">
@@ -220,11 +209,19 @@
         <input name="enemiesFlashed" type="number" min="0" inputmode="numeric" value={current.enemiesFlashed} class={fieldClass("enemiesFlashed")} />
         {#if errorFor("enemiesFlashed")}<span class="mt-1 block text-xs text-[var(--color-danger)]">{errorFor("enemiesFlashed")}</span>{/if}
       </label>
+    </div>
+    <p class="mt-3 text-xs text-[var(--color-text-muted)]">
+      GSI can't capture ADR, HS%, utility damage, or flashes — type them from the post-match scoreboard.
+    </p>
+  </section>
 
+  <details class="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-4">
+    <summary class="cursor-pointer font-semibold text-[var(--color-text-primary)]">Extended stats</summary>
+    <div class="mt-4 grid gap-4 md:grid-cols-2">
       <label class="block">
-        <span class="mb-1 block text-sm text-[var(--color-text-secondary)]">Utility damage</span>
-        <input name="utilityDamage" type="number" min="0" inputmode="numeric" value={current.utilityDamage} class={fieldClass("utilityDamage")} />
-        {#if errorFor("utilityDamage")}<span class="mt-1 block text-xs text-[var(--color-danger)]">{errorFor("utilityDamage")}</span>{/if}
+        <span class="mb-1 block text-sm text-[var(--color-text-secondary)]">MVPs</span>
+        <input name="mvps" type="number" min="0" inputmode="numeric" value={current.mvps} class={fieldClass("mvps")} />
+        {#if errorFor("mvps")}<span class="mt-1 block text-xs text-[var(--color-danger)]">{errorFor("mvps")}</span>{/if}
       </label>
 
       <label class="block">

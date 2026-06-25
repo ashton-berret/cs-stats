@@ -2,27 +2,26 @@
   import type { EChartsOption } from "echarts";
   import EChart from "./EChart.svelte";
   import { theme } from "$lib/stores";
-  import { shortDate, rollingAverage, chartColors } from "./chart-helpers";
+  import { shortDate, dedupeAxisLabel, rollingAverage, chartColors, TREND_WINDOWS } from "./chart-helpers";
   import type { DashboardStats } from "$lib/types/analytics";
 
   export let data: DashboardStats["kdTrend"];
 
-  const ROLLING_WINDOW = 5;
-
   $: c = chartColors($theme);
   $: dates = data.map((point) => shortDate(point.date));
   $: kd = data.map((point) => point.kd);
-  $: rolling = rollingAverage(kd, ROLLING_WINDOW);
+  $: shortAvg = rollingAverage(kd, TREND_WINDOWS.short);
+  $: longAvg = rollingAverage(kd, TREND_WINDOWS.long);
 
   $: option = {
     tooltip: { trigger: "axis" },
-    legend: { data: ["K/D", `${ROLLING_WINDOW}-match avg`], bottom: 0, textStyle: { color: c.text } },
+    legend: { data: ["K/D", `${TREND_WINDOWS.short}-match avg`, `${TREND_WINDOWS.long}-match avg`], bottom: 0, textStyle: { color: c.text } },
     grid: { left: 40, right: 16, top: 16, bottom: 48 },
     xAxis: {
       type: "category",
       data: dates,
       boundaryGap: false,
-      axisLabel: { color: c.text },
+      axisLabel: { color: c.text, formatter: dedupeAxisLabel(dates) },
       axisLine: { lineStyle: { color: c.border } },
     },
     yAxis: {
@@ -36,9 +35,9 @@
         type: "line",
         data: kd,
         smooth: true,
-        symbolSize: 6,
+        symbolSize: 4,
         itemStyle: { color: "#F2A900" },
-        lineStyle: { color: "#F2A900", width: 2 },
+        lineStyle: { color: "#F2A900", width: 1, opacity: 0.35 },
         markLine: {
           silent: true,
           symbol: "none",
@@ -48,12 +47,20 @@
         },
       },
       {
-        name: `${ROLLING_WINDOW}-match avg`,
+        name: `${TREND_WINDOWS.short}-match avg`,
         type: "line",
-        data: rolling,
+        data: shortAvg,
         smooth: true,
         symbol: "none",
-        lineStyle: { color: "#4A9EFF", width: 2, type: "dashed" },
+        lineStyle: { color: "#4A9EFF", width: 2.5 },
+      },
+      {
+        name: `${TREND_WINDOWS.long}-match avg`,
+        type: "line",
+        data: longAvg,
+        smooth: true,
+        symbol: "none",
+        lineStyle: { color: "#2ED573", width: 2, type: "dashed" },
       },
     ],
   } satisfies EChartsOption;

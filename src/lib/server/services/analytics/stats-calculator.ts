@@ -3,8 +3,9 @@ import type { DashboardStats } from "$lib/types/analytics";
 import type { MatchResult, MatchSide } from "$lib/types/match";
 import type { RoundRecord } from "$lib/types/rounds";
 import { mapColor } from "$lib/config/maps";
-import { buildActivity, buildPerformanceMetrics, computeFormScore } from "$lib/utils/performance";
+import { buildActivity, buildPerformanceMetrics, computeFormScore, localDateKey } from "$lib/utils/performance";
 import { parseRoundRecords, summarizeRoundRecords } from "$lib/utils/round-analytics";
+import { computeRating1, matchRounds } from "$lib/utils/rating";
 
 export interface CalendarDay {
   date: string;
@@ -20,7 +21,7 @@ export interface CalendarDay {
 export function buildPerformanceCalendar(matches: MatchWithUserStat[], days: number): CalendarDay[] {
   const byDate = new Map<string, MatchWithUserStat[]>();
   for (const match of matches) {
-    const key = match.playedAt.toISOString().slice(0, 10);
+    const key = localDateKey(match.playedAt);
     const list = byDate.get(key) ?? [];
     list.push(match);
     byDate.set(key, list);
@@ -65,7 +66,8 @@ interface MatchPoint {
   assists: number;
   adr: number | null;
   hsPercent: number | null;
-  hltvRating: number | null;
+  rating: number | null; // raw HLTV Rating 1.0 (exact for GSI matches, estimated otherwise)
+  ratingCasual: number | null; // casual-calibrated rating
   utilityDamage: number | null;
   rounds: RoundRecord[];
 }
@@ -110,9 +112,11 @@ export function computeDashboardStats(matches: MatchWithUserStat[]): DashboardSt
     kdRatio: ratio(totalKills, totalDeaths),
     avgAdr: average(points.map((p) => p.adr)),
     avgHsPercent: average(points.map((p) => p.hsPercent)),
-    avgHltvRating: average(points.map((p) => p.hltvRating)),
+    avgHltvRating: average(points.map((p) => p.rating), 2),
+    avgRatingCasual: average(points.map((p) => p.ratingCasual), 2),
     avgUtilityDamage: average(points.map((p) => p.utilityDamage)),
     bestMatch: pickBestMatch(points),
+    personalBests: computePersonalBests(points),
     kdTrend: points.map((p) => ({
       date: p.playedAt,
       kd: ratio(p.kills, p.deaths),
@@ -142,20 +146,29 @@ export function computeDashboardStats(matches: MatchWithUserStat[]): DashboardSt
 
 function toPoint(match: MatchWithUserStat): MatchPoint {
   const stat = match.stats[0];
+  const rounds = parseRoundRecords(match.roundsJson);
+  const kills = stat?.kills ?? 0;
+  const deaths = stat?.deaths ?? 0;
+  const roundCount = matchRounds(match);
+  const ratingResult =
+    roundCount === null
+      ? null
+      : computeRating1({ kills, deaths, rounds: roundCount, roundKills: rounds.length ? rounds.map((r) => r.kills) : null, mode: match.mode });
   return {
     id: match.id,
     map: match.map,
     side: match.side === "CT" || match.side === "T" ? match.side : null,
     playedAt: match.playedAt.toISOString(),
     result: normalizeResult(match.result),
-    kills: stat?.kills ?? 0,
-    deaths: stat?.deaths ?? 0,
+    kills,
+    deaths,
     assists: stat?.assists ?? 0,
     adr: stat?.adr ?? null,
     hsPercent: stat?.hsPercent ?? null,
-    hltvRating: stat?.hltvRating ?? null,
+    rating: ratingResult?.value ?? null,
+    ratingCasual: ratingResult?.casual ?? null,
     utilityDamage: stat?.utilityDamage ?? null,
-    rounds: parseRoundRecords(match.roundsJson),
+    rounds,
   };
 }
 
@@ -364,14 +377,46 @@ function pickBestMatch(points: MatchPoint[]): DashboardStats["bestMatch"] {
   return { id: best.id, map: best.map, kills: best.kills, deaths: best.deaths, playedAt: best.playedAt };
 }
 
+/**
+ * Best single-match value for each headline metric, tagged with the match it was set in. A higher
+ * value always wins; ties keep the earliest (the match that first reached it). Metrics a match
+ * doesn't carry (no ADR/HS% entered yet) are skipped, so PBs reflect real recorded performances.
+ */
+function computePersonalBests(points: MatchPoint[]): DashboardStats["personalBests"] {
+  const best = {
+    rating: null as DashboardStats["personalBests"]["rating"],
+    kd: null as DashboardStats["personalBests"]["kd"],
+    adr: null as DashboardStats["personalBests"]["adr"],
+    hsPercent: null as DashboardStats["personalBests"]["hsPercent"],
+    kills: null as DashboardStats["personalBests"]["kills"],
+  };
+
+  const consider = (key: keyof typeof best, value: number | null, point: MatchPoint) => {
+    if (value === null) return;
+    if (best[key] === null || value > best[key]!.value) {
+      best[key] = { value, matchId: point.id, map: point.map, playedAt: point.playedAt };
+    }
+  };
+
+  for (const point of points) {
+    consider("rating", point.rating, point);
+    consider("kd", ratio(point.kills, point.deaths), point);
+    consider("adr", point.adr, point);
+    consider("hsPercent", point.hsPercent, point);
+    consider("kills", point.kills, point);
+  }
+
+  return best;
+}
+
 function ratio(kills: number, deaths: number): number {
   return round(deaths === 0 ? kills : kills / deaths, 2);
 }
 
-function average(values: (number | null)[]): number | null {
+function average(values: (number | null)[], decimals = 1): number | null {
   const present = values.filter((value): value is number => value !== null);
   if (present.length === 0) return null;
-  return round(present.reduce((sum, value) => sum + value, 0) / present.length, 1);
+  return round(present.reduce((sum, value) => sum + value, 0) / present.length, decimals);
 }
 
 function round(value: number, decimals: number): number {
