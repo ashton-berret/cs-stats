@@ -70,6 +70,7 @@ interface MatchPoint {
   ratingCasual: number | null; // casual-calibrated rating
   utilityDamage: number | null;
   rounds: RoundRecord[];
+  roundCount: number | null; // total rounds played this match (for per-window rates); null if unknown
 }
 
 /**
@@ -117,6 +118,7 @@ export function computeDashboardStats(matches: MatchWithUserStat[]): DashboardSt
     avgUtilityDamage: average(points.map((p) => p.utilityDamage)),
     bestMatch: pickBestMatch(points),
     personalBests: computePersonalBests(points),
+    roundRates: computeRoundRates(points),
     kdTrend: points.map((p) => ({
       date: p.playedAt,
       kd: ratio(p.kills, p.deaths),
@@ -169,6 +171,7 @@ function toPoint(match: MatchWithUserStat): MatchPoint {
     ratingCasual: ratingResult?.casual ?? null,
     utilityDamage: stat?.utilityDamage ?? null,
     rounds,
+    roundCount,
   };
 }
 
@@ -240,6 +243,68 @@ function computeSidePerformanceByMap(points: MatchPoint[]): DashboardStats["side
       t: sides.T.matches === 0 ? null : sideBucketStats(sides.T),
     }))
     .sort((a, b) => (b.ct?.matches ?? 0) + (b.t?.matches ?? 0) - ((a.ct?.matches ?? 0) + (a.t?.matches ?? 0)) || a.map.localeCompare(b.map));
+}
+
+// CS2 casual is first-to-8, so an 8-round window ≈ one half. Normalizing K/D/A to it lets matches
+// of different lengths (and CT/T splits) compare on equal footing.
+const ROUND_WINDOW = 8;
+
+type RateBucket = { matches: number; kills: number; deaths: number; assists: number; rounds: number };
+
+function emptyRateBucket(): RateBucket {
+  return { matches: 0, kills: 0, deaths: 0, assists: 0, rounds: 0 };
+}
+
+function addToRateBucket(bucket: RateBucket, point: MatchPoint): void {
+  if (point.roundCount === null || point.roundCount <= 0) return; // can't normalize without round count
+  bucket.matches += 1;
+  bucket.kills += point.kills;
+  bucket.deaths += point.deaths;
+  bucket.assists += point.assists;
+  bucket.rounds += point.roundCount;
+}
+
+function rateLine(bucket: RateBucket): DashboardStats["roundRates"]["overall"] {
+  if (bucket.rounds === 0) return null;
+  const per = (total: number) => round((total / bucket.rounds) * ROUND_WINDOW, 1);
+  return {
+    kills: per(bucket.kills),
+    deaths: per(bucket.deaths),
+    assists: per(bucket.assists),
+    rounds: bucket.rounds,
+    matches: bucket.matches,
+  };
+}
+
+function computeRoundRates(points: MatchPoint[]): DashboardStats["roundRates"] {
+  const overall = emptyRateBucket();
+  const sides: Record<MatchSide, RateBucket> = { CT: emptyRateBucket(), T: emptyRateBucket() };
+  const byMap = new Map<string, Record<MatchSide, RateBucket>>();
+
+  for (const point of points) {
+    addToRateBucket(overall, point);
+    if (point.side === null) continue;
+    addToRateBucket(sides[point.side], point);
+    const group = byMap.get(point.map) ?? { CT: emptyRateBucket(), T: emptyRateBucket() };
+    addToRateBucket(group[point.side], point);
+    byMap.set(point.map, group);
+  }
+
+  return {
+    windowRounds: ROUND_WINDOW,
+    overall: rateLine(overall),
+    bySide: (["CT", "T"] as const)
+      .map((side) => ({ side, rates: rateLine(sides[side]) }))
+      .filter((entry): entry is { side: MatchSide; rates: NonNullable<typeof entry.rates> } => entry.rates !== null),
+    byMapSide: [...byMap.entries()]
+      .map(([map, group]) => ({ map, color: mapColor(map), ct: rateLine(group.CT), t: rateLine(group.T) }))
+      .filter((row) => row.ct !== null || row.t !== null)
+      .sort((a, b) => {
+        const aRounds = (a.ct?.rounds ?? 0) + (a.t?.rounds ?? 0);
+        const bRounds = (b.ct?.rounds ?? 0) + (b.t?.rounds ?? 0);
+        return bRounds - aRounds || a.map.localeCompare(b.map);
+      }),
+  };
 }
 
 function computeStreaks(points: MatchPoint[]): DashboardStats["streaks"] {

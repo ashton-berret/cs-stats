@@ -12,6 +12,7 @@
   import FeatureCard from "$lib/components/dashboard/FeatureCard.svelte";
   import FilterPills from "$lib/components/dashboard/FilterPills.svelte";
   import MatchHeatmap from "$lib/components/dashboard/MatchHeatmap.svelte";
+  import RoundRatesCard from "$lib/components/dashboard/RoundRatesCard.svelte";
   import ReviewBanner from "$lib/components/dashboard/ReviewBanner.svelte";
   import SourceTag from "$lib/components/dashboard/SourceTag.svelte";
   import { goto } from "$app/navigation";
@@ -248,6 +249,9 @@
       <div id="sec-aim" class="glass-card anim-rise scroll-mt-24 p-5 lg:col-span-2" style="animation-delay:120ms">
         <h2 class="mb-3 font-[var(--font-display)] text-lg">K/D Trend</h2>
         <KDTrend data={stats.kdTrend} />
+      </div>
+      <div class="glass-card anim-rise scroll-mt-24 p-5 lg:col-span-2" style="animation-delay:130ms">
+        <RoundRatesCard data={stats.roundRates} />
       </div>
       <div id="sec-maps" class="glass-card anim-rise scroll-mt-24 p-5" style="animation-delay:140ms">
         <h2 class="mb-3 font-[var(--font-display)] text-lg">Performance by map</h2>

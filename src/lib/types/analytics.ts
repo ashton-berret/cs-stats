@@ -18,6 +18,26 @@ export interface PersonalBests {
   kills: PersonalBest | null;
 }
 
+/** Kills/deaths/assists normalized to a fixed round window (CS2 casual half = 8 rounds). */
+export interface RoundRateLine {
+  kills: number; // per `windowRounds`
+  deaths: number;
+  assists: number;
+  rounds: number; // total rounds in this sample (context for the rate)
+  matches: number;
+}
+
+/**
+ * Per-window K/D/A so matches of different lengths compare fairly. Only matches with a known round
+ * count contribute; by-side rows need a recorded side. `byMapSide` is sorted by sample size.
+ */
+export interface RoundRates {
+  windowRounds: number;
+  overall: RoundRateLine | null;
+  bySide: { side: "CT" | "T"; rates: RoundRateLine }[];
+  byMapSide: { map: string; color: string; ct: RoundRateLine | null; t: RoundRateLine | null }[];
+}
+
 export interface DashboardStats {
   totalMatches: number;
   wins: number;
@@ -35,6 +55,7 @@ export interface DashboardStats {
   avgUtilityDamage: number | null;
   bestMatch: { id: string; map: string; kills: number; deaths: number; playedAt: string } | null;
   personalBests: PersonalBests;
+  roundRates: RoundRates;
   kdTrend: { date: string; kd: number; kills: number; deaths: number }[];
   adrTrend: { date: string; adr: number }[];
   hsTrend: { date: string; hsPercent: number }[];

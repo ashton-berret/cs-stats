@@ -17,6 +17,31 @@ describe("computeDashboardStats", () => {
     expect(stats.streaks).toEqual({ current: null, longestWin: 0, longestLoss: 0 });
     expect(stats.momentum).toBeNull();
     expect(stats.entryImpact).toBeNull();
+    expect(stats.roundRates).toEqual({ windowRounds: 8, overall: null, bySide: [], byMapSide: [] });
+  });
+
+  test("normalizes K/D/A to an 8-round window and excludes matches with unknown round counts", () => {
+    const stats = computeDashboardStats([
+      match({ id: "ct", side: "CT", result: "WIN", kills: 16, deaths: 8, assists: 4, adr: null, roundsPlayed: 16 }),
+      match({ id: "t", side: "T", result: "LOSS", kills: 4, deaths: 8, assists: 0, adr: null, roundsPlayed: 8 }),
+      match({ id: "no-rounds", side: "CT", result: "WIN", kills: 30, deaths: 1, assists: 9, adr: null }),
+    ]);
+
+    expect(stats.roundRates.windowRounds).toBe(8);
+    // 20 kills / 16 deaths / 4 assists over 24 counted rounds → ×8/24.
+    expect(stats.roundRates.overall).toEqual({ kills: 6.7, deaths: 5.3, assists: 1.3, rounds: 24, matches: 2 });
+    expect(stats.roundRates.bySide).toEqual([
+      { side: "CT", rates: { kills: 8, deaths: 4, assists: 2, rounds: 16, matches: 1 } },
+      { side: "T", rates: { kills: 4, deaths: 8, assists: 0, rounds: 8, matches: 1 } },
+    ]);
+    expect(stats.roundRates.byMapSide).toEqual([
+      {
+        map: "Mirage",
+        color: "#E8A33D",
+        ct: { kills: 8, deaths: 4, assists: 2, rounds: 16, matches: 1 },
+        t: { kills: 4, deaths: 8, assists: 0, rounds: 8, matches: 1 },
+      },
+    ]);
   });
 
   test("aggregates overall side performance and excludes null-side matches", () => {
@@ -192,6 +217,8 @@ function match(overrides: {
   kills: number;
   deaths: number;
   adr: number | null;
+  assists?: number;
+  roundsPlayed?: number | null;
   roundsJson?: string | null;
 }): MatchWithUserStat {
   return {
@@ -204,7 +231,7 @@ function match(overrides: {
     enemyScore: null,
     result: overrides.result,
     side: overrides.side,
-    roundsPlayed: null,
+    roundsPlayed: overrides.roundsPlayed ?? null,
     roundsJson: overrides.roundsJson ?? null,
     durationMinutes: null,
     notes: null,
@@ -221,7 +248,7 @@ function match(overrides: {
         isUser: true,
         kills: overrides.kills,
         deaths: overrides.deaths,
-        assists: 0,
+        assists: overrides.assists ?? 0,
         adr: overrides.adr,
         hsPercent: null,
         mvps: null,
